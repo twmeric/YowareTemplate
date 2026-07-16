@@ -1,6 +1,6 @@
 backend:
   name: github
-  repo: jimsbond007/YowareTemplate
+  repo: twmeric/YowareTemplate
   branch: main
   base_url: https://jkd-oauth-gateway.jimsbond007.workers.dev
   auth_endpoint: /auth
