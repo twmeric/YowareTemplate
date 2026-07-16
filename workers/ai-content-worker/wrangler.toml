@@ -1,0 +1,9 @@
+name = "jkd-ai-content-worker"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+# Create secrets with:
+#   wrangler secret put DEEPSEEK_API_KEY
+#   wrangler secret put GITHUB_TOKEN
+#   wrangler secret put PIXABAY_API_KEY
+#   wrangler secret put GITHUB_WEBHOOK_SECRET

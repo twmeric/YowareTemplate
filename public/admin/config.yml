@@ -1,0 +1,155 @@
+backend:
+  name: github
+  repo: jimsbond007/YowareTemplate
+  branch: main
+  base_url: https://jkd-oauth-gateway.jimsbond007.workers.dev
+  auth_endpoint: /auth
+
+# IMPORTANT: Replace OWNER/REPO and OAUTH_GATEWAY_URL when cloning this template.
+# Example:
+#   repo: jkd-studio/client-bakery-v1
+#   base_url: https://jkd-oauth-gateway.your-subdomain.workers.dev
+
+media_folder: public/assets/images
+public_folder: /assets/images
+
+site_url: https://yowaretemplate.pages.dev
+# Example:
+#   site_url: https://client-bakery-v1.pages.dev
+
+editor:
+  preview: false
+
+slug:
+  encoding: unicode
+  clean_accents: false
+  sanitize_replacement: "-"
+
+collections:
+  - name: site
+    label: 網站內容
+    files:
+      - file: public/data/content.json
+        label: 網站資料
+        name: site_content
+        fields:
+          - label: 品牌資訊
+            name: brand
+            widget: object
+            fields:
+              - { label: 品牌名稱, name: name, widget: string }
+              - { label: Logo 字母, name: logo, widget: string, hint: "單一字母或符號，顯示在圓形 Logo 中" }
+              - { label: 英文標語, name: tagline, widget: string }
+
+          - label: 導覽選單
+            name: nav
+            widget: object
+            fields:
+              - label: 選單項目
+                name: items
+                widget: list
+                fields:
+                  - { label: 名稱, name: label, widget: string }
+                  - { label: 錨點 ID, name: target, widget: string, hint: "對應頁面區塊的 id" }
+
+          - label: Hero 主視覺
+            name: hero
+            widget: object
+            fields:
+              - { label: 徽章文字, name: badge, widget: string }
+              - label: 標題行
+                name: titleLines
+                widget: list
+                field: { label: 行, name: line, widget: string }
+              - label: 強調行索引
+                name: highlightedLines
+                widget: list
+                field: { label: 索引, name: index, widget: number, value_type: int, min: 0 }
+              - { label: 描述, name: description, widget: text }
+              - label: 主要按鈕
+                name: primaryButton
+                widget: object
+                fields:
+                  - { label: 文字, name: label, widget: string }
+                  - { label: 目標錨點, name: target, widget: string }
+              - label: 次要按鈕
+                name: secondaryButton
+                widget: object
+                fields:
+                  - { label: 文字, name: label, widget: string }
+                  - { label: 目標錨點, name: target, widget: string }
+              - { label: 主圖, name: image, widget: image }
+
+          - label: 品牌故事
+            name: story
+            widget: object
+            fields:
+              - { label: 標題, name: title, widget: string }
+              - label: 段落
+                name: paragraphs
+                widget: list
+                field: { label: 段落, name: paragraph, widget: text }
+              - label: 特點
+                name: features
+                widget: list
+                field: { label: 特點, name: feature, widget: string }
+              - { label: 圖片, name: image, widget: image }
+              - { label: 引言, name: quote, widget: text }
+
+          - label: 核心服務
+            name: services
+            widget: object
+            fields:
+              - { label: 標題, name: title, widget: string }
+              - { label: 副標題, name: subtitle, widget: string }
+              - label: 服務項目
+                name: items
+                widget: list
+                fields:
+                  - { label: 圖標, name: icon, widget: string, hint: "Emoji 或文字圖標" }
+                  - { label: 標題, name: title, widget: string }
+                  - { label: 描述, name: desc, widget: text }
+
+          - label: 產品展示
+            name: products
+            widget: object
+            fields:
+              - { label: 標題, name: title, widget: string }
+              - { label: 副標題, name: subtitle, widget: string }
+              - { label: 查看全部文字, name: viewAllText, widget: string }
+              - label: 產品
+                name: items
+                widget: list
+                fields:
+                  - { label: ID, name: id, widget: string }
+                  - { label: 名稱, name: name, widget: string }
+                  - { label: 價格, name: price, widget: number, value_type: int }
+                  - { label: 原價, name: originalPrice, widget: number, value_type: int, required: false }
+                  - { label: 圖片, name: image, widget: image }
+                  - { label: 分類, name: category, widget: string }
+                  - { label: 標籤, name: tag, widget: string, required: false }
+
+          - label: 聯絡我們
+            name: contact
+            widget: object
+            fields:
+              - { label: 標題, name: title, widget: string }
+              - { label: 描述, name: description, widget: text }
+              - label: WhatsApp
+                name: whatsapp
+                widget: object
+                fields:
+                  - { label: 號碼, name: number, widget: string, hint: "不含 + 號，例如 85212345678" }
+                  - { label: 按鈕文字, name: buttonText, widget: string }
+
+          - label: 頁尾
+            name: footer
+            widget: object
+            fields:
+              - { label: 版權文字, name: copyright, widget: string }
+              - label: 社交連結
+                name: socialLinks
+                widget: list
+                fields:
+                  - { label: 平台, name: platform, widget: select, options: [facebook, instagram, youtube, twitter, linkedin] }
+                  - { label: 網址, name: url, widget: string }

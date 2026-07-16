@@ -1,0 +1,130 @@
+{
+  "brand": {
+    "name": "港日媽媽生活館",
+    "logo": "M",
+    "tagline": "Japan HK Mama Lifestyle"
+  },
+  "nav": {
+    "items": [
+      { "label": "品牌故事", "target": "story" },
+      { "label": "精選食材", "target": "products" },
+      { "label": "商務禮籃", "target": "services" },
+      { "label": "聯絡我們", "target": "contact" }
+    ]
+  },
+  "hero": {
+    "badge": "Japan HK Mama Lifestyle",
+    "titleLines": [
+      "港日媽媽生活館",
+      "為您及家人",
+      "挑選樹上熟的日本原味"
+    ],
+    "highlightedLines": [1],
+    "description": "由旅居日本多年的岩本太太親自挑選，將最地道、最健康的日本高級食材直送香港，讓您在家也能品嚐到日本的四季滋味。",
+    "primaryButton": {
+      "label": "瀏覽今日精選",
+      "target": "products"
+    },
+    "secondaryButton": {
+      "label": "了解品牌故事",
+      "target": "story"
+    },
+    "image": "https://images.unsplash.com/photo-1547986280-fdcf1b207d27?q=80&w=1000&auto=format&fit=crop"
+  },
+  "story": {
+    "title": "關於創辦人：岩本太太",
+    "paragraphs": [
+      "岩本太太曾旅居日本多年，精通日語與翻譯。在繁忙的日本生活中，她曾因過勞而大病一場，這段經歷讓她深刻體會到「醫食同源」的重要性。",
+      "康復後，她開始專注於健康藥膳飲食，並深入日本各地的農場與市場，尋找最天然、最優質的食材。",
+      "「港日媽媽生活館」的誕生，是希望將這份對健康的執著與對日本食材的專業知識，分享給每一位重視家人健康的香港媽媽。"
+    ],
+    "features": [
+      "專業日本食材買手",
+      "健康藥膳飲食專家",
+      "旅居日本翻譯背景",
+      "嚴選樹上熟原味"
+    ],
+    "image": "https://images.unsplash.com/photo-1780498888194-7fad2976fa14?q=80&w=800&auto=format&fit=crop",
+    "quote": "醫食同源，從挑選好食材開始。"
+  },
+  "services": {
+    "title": "核心服務",
+    "subtitle": "全方位滿足您的日本食材需求",
+    "items": [
+      {
+        "icon": "🥩",
+        "title": "B2C 團購零售",
+        "desc": "嚴選宮崎和牛、空運時令水果，每週直送香港，讓您以最優惠價格享受頂級食材。"
+      },
+      {
+        "icon": "🎁",
+        "title": "B2B 商務禮儀",
+        "desc": "提供樹上熟果籃、過大禮禮盒及商務定制禮籃，展現您的尊貴品味與誠意。"
+      },
+      {
+        "icon": "🍣",
+        "title": "體驗式服務",
+        "desc": "日式到會服務、手掬壽司工作坊，將日本飲食文化帶入您的生活空間。"
+      }
+    ]
+  },
+  "products": {
+    "title": "今日精選食材",
+    "subtitle": "岩本太太親自挑選，本週最推薦的日本直送美味",
+    "viewAllText": "查看全部產品",
+    "items": [
+      {
+        "id": "1",
+        "name": "A5 鹿兒島和牛肉眼扒 (約 300g)",
+        "price": 480,
+        "originalPrice": 580,
+        "image": "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop",
+        "category": "頂級肉類",
+        "tag": "日本直送"
+      },
+      {
+        "id": "2",
+        "name": "樹上熟山梨白桃禮盒 (2入)",
+        "price": 268,
+        "originalPrice": 320,
+        "image": "https://images.unsplash.com/photo-1642372849486-f88b963cb734?q=80&w=800&auto=format&fit=crop",
+        "category": "時令水果",
+        "tag": "人氣熱銷"
+      },
+      {
+        "id": "3",
+        "name": "精選日式果籃 (商務/過大禮)",
+        "price": 880,
+        "originalPrice": 1080,
+        "image": "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop",
+        "category": "商務禮籃",
+        "tag": "專業定制"
+      },
+      {
+        "id": "4",
+        "name": "靜岡皇冠哈密瓜 (特大)",
+        "price": 398,
+        "originalPrice": 450,
+        "image": "https://images.unsplash.com/photo-1782380370791-25afb178ae22?q=80&w=800&auto=format&fit=crop",
+        "category": "時令水果",
+        "tag": "日本直送"
+      }
+    ]
+  },
+  "contact": {
+    "title": "準備好品嚐日本原味了嗎？",
+    "description": "不論是家庭聚餐、商務送禮，還是想了解更多食材資訊，歡迎隨時透過 WhatsApp 與我們聯絡。",
+    "whatsapp": {
+      "number": "85212345678",
+      "buttonText": "立即 WhatsApp 查詢"
+    }
+  },
+  "footer": {
+    "copyright": "© 2024 Japan HK Mama. All rights reserved.",
+    "socialLinks": [
+      { "platform": "facebook", "url": "#" },
+      { "platform": "instagram", "url": "#" },
+      { "platform": "youtube", "url": "#" }
+    ]
+  }
+}
