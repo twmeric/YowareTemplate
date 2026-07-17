@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2 } from "lucide-react";
+import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { login, logout, loadContent, saveContent, setToken, AdminAPIError, getTokenRole } from "../api/admin";
 import ImageInput from "../components/admin/ImageInput";
 import MediaLibrary from "../components/admin/MediaLibrary";
-import OrdersTab from "../components/admin/OrdersTab";
 import type { SiteContent, Product, ServiceItem, NavItem, SocialLink } from "../types/content";
 
 const DEFAULT_CONTENT: SiteContent = {
@@ -159,7 +159,6 @@ const Admin: React.FC = () => {
     { id: "services", label: "服務" },
     { id: "products", label: "產品" },
     { id: "media", label: "媒體庫" },
-    { id: "orders", label: "訂單管理" },
     { id: "contact", label: "聯絡" },
     { id: "footer", label: "頁尾" },
   ];
@@ -170,6 +169,14 @@ const Admin: React.FC = () => {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-brand-green hover:text-brand-red transition-colors"
+              title="返回主頁"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline text-sm font-medium">返回主頁</span>
+            </Link>
             <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white font-bold">
               {content.brand.logo || "A"}
             </div>
@@ -266,9 +273,6 @@ const Admin: React.FC = () => {
           )}
           {activeSection === "media" && (
             <MediaSection />
-          )}
-          {activeSection === "orders" && (
-            <OrdersTab />
           )}
           {activeSection === "footer" && (
             <FooterSection footer={content.footer} onChange={(v) => updateField("footer", v)} />

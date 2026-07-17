@@ -11,6 +11,8 @@ import {
   ArrowRight,
   CheckCircle2,
   Sparkles,
+  ArrowLeft,
+  Home,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useContent } from "../hooks/useContent";
@@ -133,24 +135,43 @@ const LandingPreview: React.FC = () => {
         }`}
       >
         <div className="container mx-auto px-4 flex items-center justify-between">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            {brand.logoImage ? (
-              <img
-                src={brand.logoImage}
-                alt={brand.name}
-                className="h-10 w-auto object-contain"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-xl">
-                {brand.logo}
-              </div>
-            )}
-            <span className="text-xl font-bold tracking-tight text-brand-green">
-              {brand.name}
-            </span>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className={`hidden sm:flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                scrolled ? "text-brand-green hover:text-brand-red" : "text-brand-green hover:text-brand-red"
+              }`}
+              title="返回主頁"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              返回主頁
+            </Link>
+            <Link
+              to="/"
+              className="sm:hidden p-2 rounded-full transition-colors"
+              title="返回主頁"
+            >
+              <Home className={`w-5 h-5 ${scrolled ? "text-brand-green" : "text-brand-green"}`} />
+            </Link>
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              {brand.logoImage ? (
+                <img
+                  src={brand.logoImage}
+                  alt={brand.name}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  {brand.logo}
+                </div>
+              )}
+              <span className="text-xl font-bold tracking-tight text-brand-green">
+                {brand.name}
+              </span>
+            </div>
           </div>
 
           {/* Desktop Menu */}
@@ -372,6 +393,20 @@ const LandingPreview: React.FC = () => {
           </div>
         </section>
       </main>
+
+      {/* Floating WhatsApp Button */}
+      {contact.whatsapp.number && (
+        <a
+          href={`https://wa.me/${contact.whatsapp.number}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 bg-[#25D366] text-white rounded-full shadow-lg hover:scale-105 transition-transform"
+          aria-label="WhatsApp 查詢"
+        >
+          <MessageCircle className="w-6 h-6" />
+          <span className="hidden sm:inline font-medium">WhatsApp 查詢</span>
+        </a>
+      )}
 
       {/* Footer */}
       <footer className="bg-white py-12 border-t border-gray-100">
