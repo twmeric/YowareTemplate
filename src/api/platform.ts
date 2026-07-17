@@ -68,13 +68,25 @@ export class PlatformAPIError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  const url = `${API_URL}${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+  } catch (networkErr) {
+    // eslint-disable-next-line no-console
+    console.error("[PlatformAPI] Network error fetching", url, networkErr);
+    throw new PlatformAPIError(
+      0,
+      "NETWORK_ERROR",
+      networkErr instanceof Error ? networkErr.message : "無法連線到伺服器"
+    );
+  }
 
   const body = (await res.json().catch(() => ({}))) as {
     success?: boolean;

@@ -78,10 +78,15 @@ interface RawSiteContent {
 
 import { SYSTEM_PROMPT } from "./prompt";
 
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS: Array<string | RegExp> = [
   "https://yowaretemplate.pages.dev",
+  /^https:\/\/[a-zA-Z0-9_-]+\.yowaretemplate\.pages\.dev$/,
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://[::1]:5173",
   "http://localhost:8787",
+  "http://127.0.0.1:8787",
+  "http://[::1]:8787",
 ];
 
 const CORS_HEADERS = {
@@ -93,7 +98,14 @@ const CORS_HEADERS = {
 function getAllowedOrigin(request: Request): string | null {
   const origin = request.headers.get("Origin");
   if (!origin) return null;
-  return ALLOWED_ORIGINS.includes(origin) ? origin : null;
+  for (const allowed of ALLOWED_ORIGINS) {
+    if (typeof allowed === "string") {
+      if (allowed === origin) return origin;
+    } else if (allowed.test(origin)) {
+      return origin;
+    }
+  }
+  return null;
 }
 
 function jsonResponse(data: unknown, request: Request, status = 200): Response {

@@ -23,10 +23,15 @@ export interface Env {
   ADMIN_TOKEN_SECRET: string;
 }
 
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS: Array<string | RegExp> = [
   "https://yowaretemplate.pages.dev",
+  /^https:\/\/[a-zA-Z0-9_-]+\.yowaretemplate\.pages\.dev$/,
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://[::1]:5173",
   "http://localhost:8787",
+  "http://127.0.0.1:8787",
+  "http://[::1]:8787",
 ];
 
 const CUSTOMER_SCHEMA = z.object({
@@ -55,11 +60,20 @@ const rateLimitMap = new Map<string, RateLimitEntry>();
 function getAllowedOrigin(request: Request): string | null {
   const origin = request.headers.get("Origin");
   if (!origin) return null;
-  return ALLOWED_ORIGINS.includes(origin) ? origin : null;
+  for (const allowed of ALLOWED_ORIGINS) {
+    if (typeof allowed === "string") {
+      if (allowed === origin) return origin;
+    } else if (allowed.test(origin)) {
+      return origin;
+    }
+  }
+  return null;
 }
 
 function corsHeaders(request: Request, origin: string | null): Record<string, string> {
-  const allowedOrigin = origin ?? ALLOWED_ORIGINS[0];
+  // For unknown origins (e.g. user proxies, mobile apps, curl), fall back to wildcard
+  // so the public API remains usable. Credentials are not used on cross-origin calls.
+  const allowedOrigin = origin ?? "*";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",

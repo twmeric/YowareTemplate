@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, ArrowRight, LayoutTemplate } from "lucide-react";
+import { Loader2, ArrowRight, LayoutTemplate, Eye, Settings } from "lucide-react";
 import PlatformLayout from "./PlatformLayout";
 import { listTemplates, type TemplateSummary } from "../../api/platform";
 
@@ -67,9 +67,13 @@ const TemplatesPage: React.FC = () => {
             {templates.map((template) => (
               <div
                 key={template.slug}
-                className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all"
+                className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all flex flex-col"
               >
-                <div className="aspect-[4/3] bg-brand-bg overflow-hidden">
+                {/* 點擊縮圖直接預覽前台 */}
+                <Link
+                  to={template.previewUrl || "/preview"}
+                  className="aspect-[4/3] bg-brand-bg overflow-hidden relative block"
+                >
                   {template.thumbnailUrl ? (
                     <img
                       src={template.thumbnailUrl}
@@ -81,9 +85,10 @@ const TemplatesPage: React.FC = () => {
                       <LayoutTemplate className="w-12 h-12" />
                     </div>
                   )}
-                </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                </Link>
 
-                <div className="p-6">
+                <div className="p-6 flex flex-col flex-1">
                   <h3 className="text-lg font-bold text-brand-green mb-2">
                     {template.name}
                   </h3>
@@ -91,7 +96,25 @@ const TemplatesPage: React.FC = () => {
                     {template.description}
                   </p>
 
-                  <div className="flex items-center justify-between">
+                  {/* 先體驗，再決定 */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <Link
+                      to={template.previewUrl || "/preview"}
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-gray-100 text-sm font-medium text-brand-green bg-brand-bg hover:bg-brand-green hover:text-white hover:border-brand-green transition-all"
+                    >
+                      <Eye className="w-4 h-4" />
+                      預覽前台
+                    </Link>
+                    <Link
+                      to="/manage"
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-gray-100 text-sm font-medium text-brand-red bg-red-50 hover:bg-brand-red hover:text-white hover:border-brand-red transition-all"
+                    >
+                      <Settings className="w-4 h-4" />
+                      預覽後台
+                    </Link>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-auto">
                     <span className="text-sm font-medium text-brand-red">
                       {template.currency} {template.basePrice?.toLocaleString() ?? 0} 起
                     </span>

@@ -23,11 +23,23 @@ export class AIAPIError extends Error {
 export async function generateContent(
   brief: string
 ): Promise<GenerateContentResult> {
-  const res = await fetch(`${AI_API_URL}/api/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ brief }),
-  });
+  const url = `${AI_API_URL}/api/generate`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brief }),
+    });
+  } catch (networkErr) {
+    // eslint-disable-next-line no-console
+    console.error("[AIAPI] Network error fetching", url, networkErr);
+    throw new AIAPIError(
+      0,
+      "NETWORK_ERROR",
+      networkErr instanceof Error ? networkErr.message : "無法連線到 AI 伺服器"
+    );
+  }
 
   const body = (await res.json().catch(() => ({}))) as {
     success?: boolean;
