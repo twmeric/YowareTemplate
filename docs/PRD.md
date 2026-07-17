@@ -32,14 +32,14 @@
 
 ### 1.3 Phase 1 目標
 
-在現有模板之上疊加一層「客戶自助平台」：
+在現有模板之上疊加一層「客戶自助平台」，並將架構從「單一內建模板 + 外部獨立部署第二模板」調整為「所有模板統一內建於平台」的多模板架構：
 
-1. 讓潛在客戶可以在公開網站瀏覽模板、預覽效果、填寫需求。
-2. 將填寫結果轉為結構化訂單，儲存在後端資料庫。
+1. 讓潛在客戶可以在公開網站瀏覽所有內建模板、預覽效果、填寫需求。
+2. 將填寫結果轉為結構化訂單，儲存在後端資料庫；訂單須記錄所選模板，供 AI Worker 依 `templateSlug` 輸出對應內容格式。
 3. 自動通知平台經營者，並在既有 `/manage` 後台提供訂單審閱與狀態管理。
 4. **Phase 1 仍採人工履約**：經營者收到訂單後，沿用現有的 GitHub 模板複製 + AI 生成流程為客戶建立網站。
 
-> 簡言之：Phase 1 是把「GitHub 後台操作」包裝成客戶可見的銷售漏斗，但履約仍由人工完成。
+> 簡言之：Phase 1 是把「GitHub 後台操作」包裝成客戶可見的銷售漏斗，同時讓平台可內建多套模板；履約仍由人工完成。
 
 ---
 
@@ -108,31 +108,54 @@
 
 ### 4.2 模板列表頁（`/templates`）
 
-**描述**：展示目前平台上可訂購的模板卡片，讓客戶比較後選擇。
+**描述**：展示目前平台上可訂購的模板卡片，讓客戶比較後選擇。未來所有模板均為平台內建的「模板套件」，不再獨立部署為外部 Cloudflare Pages 專案。
 
 **驗收標準**：
 - [ ] 訪問 `/templates` 時，從平台 API 讀取模板清單並以卡片形式呈現。
 - [ ] 每張卡片至少顯示：模板名稱、縮圖、適用行業、簡短描述、價格（或「聯絡報價」）、「預覽」與「選用此模板」按鈕。
-- [ ] 若只有一個模板（Phase 1 現況），頁面仍正常運作，不顯示空狀態錯誤。
+- [ ] 若只有一個模板，頁面仍正常運作，不顯示空狀態錯誤。
 - [ ] 點擊「預覽」進入 `/templates/:templateId`。
 - [ ] 點擊「選用此模板」進入 `/start/:templateId`。
+- [ ] 平台經營者可透過卡片上的「後台編輯」連結（不對外公開）進入 `/man/:slug`，一般訪客看不到此入口。
 
 ### 4.3 模板詳情與即時預覽（`/templates/:templateId`）
 
-**描述**：顯示單一模板的詳細資訊，並提供可切換桌面/手機的即時預覽。
+**描述**：顯示單一模板的詳細資訊，並提供可切換桌面/手機的即時預覽。預覽實際渲染對應模板套件的 `Preview.tsx`，不再依賴固定單一路由。
 
 **驗收標準**：
 - [ ] 訪問 `/templates/:templateId` 時，依照 `templateId` 載入對應模板資訊；找不到時顯示 404 頁面。
 - [ ] 頁面包含：模板名稱、完整描述、適用行業、功能清單、價格、預覽區。
-- [ ] 預覽區以 iframe 或內嵌方式渲染該模板的 Demo（建議使用 `/preview/:templateId` 路由，預設載入 `public/data/content.json`）。
+- [ ] 預覽區以 iframe 或內嵌方式渲染該模板的 Demo，iframe 網址為 `/pre/:slug`。
+- [ ] `/pre/:slug` 根據 slug 動態載入對應模板套件內的 `Preview.tsx`（例如 `E:\Projects\YowareTemplate\src\templates\tcm-v1\Preview.tsx`），並使用該模板預設內容或 demo 資料渲染。
+- [ ] 對於既有模板 `landing-v1`，同時保留 `/preview` 作為向後相容入口。
 - [ ] 提供「桌面版」與「手機版」切換按鈕，切換時預覽區寬度改變。
 - [ ] 明確的「開始使用此模板」按鈕，導向 `/start/:templateId`。
 
 ### 4.4 建站需求表單精靈（`/start/:templateId`）
 
-**描述**：將原本 `brief.txt` 的欄位轉為可視化、分步驟的表單。客戶依序填寫後，於最後一步確認並提交。
+**描述**：將原本 `brief.txt` 的欄位轉為可視化、分步驟的表單。精靈根據所選模板在 `templates.wizard_schema` 中定義的欄位動態生成表單，所有模板共享一組基礎欄位，但可依產業擴充專屬欄位（例如中醫模板需要「醫師姓名」、「診所地址」）。客戶依序填寫後，於最後一步確認並提交。
 
-**表單欄位（對應 `brief.txt` 欄位）**：
+**表單欄位架構**（由 `wizard_schema` 動態定義）：
+
+| 類型 | 欄位 | 必填 | 說明 |
+|------|------|------|------|
+| 基礎欄位 | 聯絡人姓名 | 是 | 用於後續溝通 |
+| 基礎欄位 | 電子郵件 | 是 | 訂單確認與聯繫用 |
+| 基礎欄位 | WhatsApp / 電話 | 是 | 優先聯繫方式 |
+| 基礎欄位 | 行業別 | 是 | e.g. 餐飲、零售、個人品牌、醫療 |
+| 基礎欄位 | 品牌名稱 | 是 | 網站顯示名稱 |
+| 基礎欄位 | 品牌調性 | 是 | e.g. 溫暖、文青、專業、高端 |
+| 基礎欄位 | 語言 | 是 | 預設繁體中文 |
+| 基礎欄位 | 核心賣點 | 是 | 多行文字，可列點 |
+| 基礎欄位 | 目標客群 | 是 | e.g. 25-45 歲上班族 |
+| 基礎欄位 | 聯絡方式（網站使用） | 是 | e.g. WhatsApp 號碼 |
+| 基礎欄位 | 禁用詞 | 否 | 避免 AI 使用的詞彙 |
+| 基礎欄位 | 其他補充 | 否 | 客戶自由填寫 |
+| 專屬欄位 | 依 `wizard_schema` 定義 | 依欄位而定 | e.g. 中醫模板：醫師姓名、診所地址、營業時間 |
+
+`wizard_schema` 為 JSON 陣列，每個欄位至少包含 `name`、`type`、`label`、`required`；`type` 可為 `text`、`textarea`、`select`、`phone`、`email` 等。專屬欄位可透過額外屬性（如 `category`、`group`）分組顯示。
+
+以 `landing-v1` 為例的步驟分群：
 
 | 步驟 | 欄位 | 必填 | 說明 |
 |------|------|------|------|
@@ -150,7 +173,9 @@
 | 3. 業務內容 | 其他補充 | 否 | 客戶自由填寫 |
 
 **驗收標準**：
-- [ ] 表單分為 3 個步驟，上方顯示進度條（Step 1 / 2 / 3）。
+- [ ] 表單根據 `templates.wizard_schema` 動態生成，欄位順序、類型、必填狀態以 schema 為準。
+- [ ] 所有模板共享基礎欄位；專屬欄位依模板自動顯示，且不影響既有模板的填單體驗。
+- [ ] 表單分為 3 個步驟（或依 schema 分組），上方顯示進度條（Step 1 / 2 / 3）。
 - [ ] 每個欄位有清楚標籤與 placeholder 提示；必填欄位未填時無法進入下一步。
 - [ ] 電子郵件格式驗證；WhatsApp 號碼僅允許數字與少量符號（`+`、`-`、空格）。
 - [ ] 客戶可在每一步返回修改；表單資料自動暫存於 `localStorage`，重新整理後不清空。
@@ -173,6 +198,7 @@
   - `GET /api/orders/:publicId/status`：查詢單一訂單公開狀態（公開）。
 - [ ] 經營者訂單審核端點置於 `admin-api-worker`（見 4.7），沿用既有 JWT 驗證。
 - [ ] 訂單建立後，後端須觸發通知（見 4.6）。
+- [ ] 訂單須記錄所選模板的 `templateSlug`，供 `workers/ai-content-worker` 依據模板類型輸出對應內容格式。短期由 AI 直接產出模板專屬 JSON；長期可建立通用內容中間層，再經各模板套件的 `adapter.ts` 轉換為最終內容。
 - [ ] 所有端點回傳統一 JSON 格式：`{ success: boolean, data?, error? }`。
 - [ ] 公開端點正確設定 CORS，僅允許平台網域。
 
@@ -188,6 +214,7 @@ CREATE TABLE IF NOT EXISTS templates (
   description TEXT,
   thumbnail_url TEXT,
   preview_url TEXT,
+  admin_url TEXT,
   base_price INTEGER,
   currency TEXT DEFAULT 'HKD',
   wizard_schema TEXT NOT NULL,
@@ -271,23 +298,25 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 - [ ] 列表與詳情均支援響應式布局。
 - [ ] 後台訂單 API 端點置於 `admin-api-worker`：`GET /api/orders`、 `GET /api/orders/:id`、 `PATCH /api/orders/:id`。需驗證 JWT；未授權請求回傳 401。
 
-### 4.8 現有模板預覽保留（`/preview` 或 `/preview/:templateId`）
+### 4.8 現有模板預覽保留（`/preview` 與 `/pre/:slug`）
 
-**描述**：平台首頁不再使用根路由顯示客戶模板，但模板本身的預覽仍須保留，供客戶在瀏覽與填單時參考。
+**描述**：平台首頁不再使用根路由顯示客戶模板，但模板本身的預覽仍須保留，供客戶在瀏覽與填單時參考。新模板統一走 `/pre/:slug` 動態路由；既有 `landing-v1` 保留 `/preview` 作為向後相容入口。
 
 **驗收標準**：
-- [ ] 既有 `src/App.tsx` 中的 `LandingApp` 元件保留，但改為 `/preview` 路由專用。
+- [ ] 既有 `src/App.tsx` 中的 `LandingApp` 元件保留，並對應 `/preview` 路由（給 `landing-v1` 使用）。
 - [ ] `/preview` 繼續載入 `public/data/content.json` 並渲染完整 Landing Page。
-- [ ] `/preview` 上方可加一條「這是模板預覽」的提示列，並提供返回平台或開始建站的連結。
+- [ ] 新增 `/pre/:slug` 路由，根據 slug 動態載入對應模板套件內的 `Preview.tsx`（例如 `E:\Projects\YowareTemplate\src\templates\tcm-v1\Preview.tsx`）。
+- [ ] 每個模板套件負責自己的預設 demo 內容與渲染邏輯；平台層只負責解析 slug 並掛載元件。
+- [ ] `/preview` 與 `/pre/:slug` 上方可加一條「這是模板預覽」的提示列，並提供返回平台或開始建站的連結。
 - [ ] 不影響 AI Worker 對 `public/data/content.json` 的更新流程。
 
 ### 4.9 前端路由與共用版面
 
-**描述**：引入前端路由，區分「平台頁面」與「既有後台/預覽頁面」。
+**描述**：引入前端路由，區分「平台頁面」、「模板預覽/後台頁面」與「既有後台/預覽頁面」。模板相關路由根據 slug 動態載入對應模板套件。
 
 **驗收標準**：
 - [ ] 新增 `react-router-dom` 依賴。
-- [ ] 於 `src/App.tsx` 中設定路由（建議使用 `BrowserRouter`，Cloudflare Pages SPA fallback 已於 `public/_redirects` 設定）。
+- [ ] 於 `E:\Projects\YowareTemplate\src\App.tsx` 中設定路由（建議使用 `BrowserRouter`，Cloudflare Pages SPA fallback 已於 `public/_redirects` 設定）。
 - [ ] 路由表：
 
 | 路由 | 說明 | 權限 |
@@ -297,12 +326,22 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 | `/templates/:templateId` | 模板詳情與預覽 | 公開 |
 | `/start/:templateId` | 建站表單精靈 | 公開 |
 | `/order-success` | 訂單提交成功頁 | 公開 |
-| `/preview` | 模板即時預覽 | 公開 |
+| `/pre/:slug` | 模板前台預覽（動態載入對應 `Preview.tsx`） | 公開 |
+| `/preview` | `landing-v1` 預覽（向後相容） | 公開 |
+| `/man/:slug` | 模板後台內容編輯（動態載入對應 `Admin.tsx`） | 需密碼/JWT |
 | `/manage` | 既有後台（內容管理 + 訂單管理） | 需密碼/JWT |
 | `*` | 404 頁面 | 公開 |
 
+- [ ] `/pre/:slug` 與 `/man/:slug` 不得出現在公開導航列、Footer、Sitemap 或任何對外可見位置（根據母機守則 Rule 43）。
+- [ ] `/pre/:slug` 根據 slug 動態載入模板套件的 `Preview.tsx`；`/man/:slug` 根據 slug 動態載入模板套件的 `Admin.tsx`。
+- [ ] 模板套件標準目錄結構：
+  - `E:\Projects\YowareTemplate\src\templates\<slug>\components\`：該模板的 section 組件。
+  - `E:\Projects\YowareTemplate\src\templates\<slug>\schema.ts`：內容型別定義。
+  - `E:\Projects\YowareTemplate\src\templates\<slug>\adapter.ts`：把通用問卷答案轉為該模板的專屬內容格式。
+  - `E:\Projects\YowareTemplate\src\templates\<slug>\Preview.tsx`：前台預覽頁面。
+  - `E:\Projects\YowareTemplate\src\templates\<slug>\Admin.tsx`：後台內容編輯頁面。
 - [ ] 平台頁面使用統一的 `PlatformLayout`（含平台 header/footer），與 `/manage` 的後台風格區隔。
-- [ ] 平台 header 包含：Logo、模板、價格/方案、關於、CTA 按鈕。
+- [ ] 平台 header 包含：Logo、模板、價格/方案、關於、CTA 按鈕；不得包含 `/man/:slug` 或 `/manage` 連結。
 
 ### 4.10 部署與環境設定
 
@@ -325,6 +364,8 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 
 以下項目**不**屬於 Phase 1 MVP，應避免在此階段實作，以免延誤上線：
 
+> 注意：「平台內建多模板」已調整為 Phase 1 目標（見 1.3、4.2、4.9）；本表中的「第三方模板市集」特指**非平台內建的第三方/external 模板上架與分潤**，仍屬未來目標。
+
 | 項目 | 說明 | 預計階段 |
 |------|------|----------|
 | 自動開站 / 自動佈建 | 收到訂單後自動複製 GitHub repo、建立 Pages 專案、綁定網域 | Phase 2 |
@@ -332,7 +373,7 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 | 金流與訂閱 | 線上付款、發票、月費/年費方案 | Phase 3 |
 | 自訂網域與 DNS 管理 | 客戶綁定自己的網域 | Phase 2+ |
 | 多語系與 i18n | 平台與模板支援多語言切換 | Phase 2+ |
-| 模板市集 | 多個第三方模板上架與分潤 | Phase 3 |
+| 第三方模板市集 | 非平台內建的第三方/external 模板上架與分潤 | Phase 3 |
 | 客戶端 CMS 編輯器 | 客戶登入後自行修改網站內容（現有 `/manage` 僅供平台經營者使用） | Phase 3 |
 | 進階數據分析 | 訪客數、轉換漏斗、熱力圖 | Phase 2+ |
 | 即時客服 / 聊天機器人 | 平台內建對話功能 | 未來評估 |
@@ -346,12 +387,14 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 
 | 頁面/元件 | 主要內容 | 備註 |
 |-----------|----------|------|
-| `PlatformLayout` | 平台共用 Header、Footer、主要內容區 | 不包含 `/manage` 與 `/preview` |
+| `PlatformLayout` | 平台共用 Header、Footer、主要內容區 | 不包含 `/manage`、`/preview`、`/pre/:slug`、`/man/:slug` |
 | `HomePage` | Hero、價值主張、精選模板、流程說明、CTA | 根路由 `/` |
 | `TemplatesPage` | 模板卡片網格、篩選（可簡化為全部） | `/templates` |
 | `TemplateDetailPage` | 模板資訊 + 桌面/手機預覽切換 | `/templates/:templateId` |
 | `StartWizardPage` | 三步驟表單精靈 + 進度條 + 摘要 | `/start/:templateId` |
 | `OrderSuccessPage` | 成功提示、訂單編號、後續說明 | `/order-success` |
+| `TemplatePreviewShell` | 動態載入並掛載模板套件的 `Preview.tsx` | `/pre/:slug` |
+| `TemplateAdminShell` | 動態載入並掛載模板套件的 `Admin.tsx` | `/man/:slug` |
 | `NotFoundPage` | 404 插圖與返回首頁按鈕 | `*` |
 | `Admin`（既有） | 新增「訂單管理」頁籤 | `/manage` |
 
@@ -371,6 +414,8 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 - 多行文字欄位（核心賣點、補充說明）提供至少 4 行高度。
 - 表單資料每 3 秒自動寫入 `localStorage`，並顯示「已自動儲存草稿」提示。
 - 客戶手動清除草稿後，可重新開始。
+- 表單欄位根據 `wizard_schema` 動態渲染；切換模板時，精靈自動重載對應欄位，並保留已填寫的通用基礎欄位值。
+- 專屬欄位（如「醫師姓名」）僅在選用對應模板時顯示，避免干擾其他行業客戶。
 
 ### 6.4 預覽區互動
 
@@ -378,6 +423,8 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 - 桌面預覽寬度：100% 容器寬度。
 - 手機預覽寬度：375px，置中並加上手機外框視覺。
 - 預覽區載入時顯示 skeleton loading，載入失敗時顯示「預覽暫時無法載入」。
+- 模板切換時，預覽區與表單同步更新為該模板的專屬欄位與 demo 內容。
+- 每個模板的預覽與後台編輯頁面由模板套件自行實作，平台層只負責路由與版面容器。
 
 ### 6.5 狀態與回饋
 
@@ -430,13 +477,16 @@ Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否
 當 Phase 1 證明客戶願意填單、經營者願意履約後，下一步減少人工：
 
 1. **訂單確認後自動觸發開站流程**：
-   - Worker 呼叫 GitHub API，使用「Repository template」功能從 `twmeric/YowareTemplate` 建立客戶專屬 repo。
+   - Worker 依據 `orders.template_id` 決定要複製的倉庫或模板套件。
+   - 對於內建於主平台的模板，短期可沿用 GitHub Repository template 機制，或改由主平台分支/環境變數直接承載多模板。
    - repo 命名規則：`client-<order-id>-<template-id>`。
-2. **自動寫入 brief**：將訂單表單轉為 `brief.txt` 並 commit 至新 repo。
-3. **自動設定 Webhook**：在新 repo 註冊 `ai-content-worker` webhook。
+2. **自動寫入 brief**：將訂單表單轉為 `brief.txt`（或對應模板的專屬內容格式）並 commit 至新 repo。
+3. **自動設定 Webhook**：在新 repo 註冊 `ai-content-worker` webhook；AI Worker 根據 `templateSlug` 輸出對應模板可解析的內容格式。
 4. **自動建立 Cloudflare Pages 專案**：透過 Cloudflare API 建立 Pages project，綁定新 repo，設定 build command 與輸出目錄。
-5. **自動部署**：GitHub push 觸發 Pages build；AI Worker 生成 `content.json`。
-6. **交付通知**：完成後自動寄送客戶站連結與 `/manage` 自動登入連結給客戶。
+5. **自動部署**：GitHub push 觸發 Pages build；AI Worker 生成對應模板的內容檔案（如 `content.json` 或模板專屬內容檔）。
+6. **交付通知**：完成後自動寄送客戶站連結與後台自動登入連結給客戶。
+
+> 多模板內容格式：Phase 2 須明確每個模板儲存內容的檔案路徑與 schema，並讓 `adapter.ts` 或 AI Worker 能將通用問卷答案轉為該格式。
 
 ### 8.2 Phase 3：完整 SaaS 平台
 
@@ -461,7 +511,9 @@ Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否
 | **公開訂單 API 被濫用或遭受垃圾攻擊** | D1 被灌爆、通知疲勞 | Honeypot、IP rate limiting、Email 格式驗證、必要時加上 Cloudflare Turnstile |
 | **通知郵件被歸類為垃圾信** | 經營者漏接訂單 | 使用可靠寄件服務（Resend）、設定 SPF/DKIM、同時預留 Telegram/Slack 通知 |
 | **D1 免費方案限制或效能瓶頸** | 查詢緩慢 | Phase 1 資料量小，後續可升級 D1 或遷移至 PostgreSQL |
-| **只有單一模板，客戶選擇有限** | 轉換率偏低 | Phase 1 快速驗證需求；根據回饋製作 2-3 個新模板 |
+| **每新增一套模板需開發專屬 adapter 與 Admin/Preview 頁面** | 模板上線週期拉長 | 建立模板套件範本與共用 UI 元件庫；優先製作 2-3 個高需求產業模板 |
+| **AI Worker 需支援多種內容格式輸出** | 生成內容與模板 schema 不匹配 | 短期由 AI 直接產出模板專屬 JSON 並驗證；長期建立通用內容中間層 + adapter 轉換機制 |
+| **動態表單欄位組合變多，驗證邏輯複雜化** | 表單提交失敗、資料不完整 | 使用共用驗證器；依 `wizard_schema` 自動產生前端與後端驗證規則 |
 | **`/manage` 後台權限外洩** | 訂單資料外洩 | 強密碼、JWT 過期、避免在 Git 提交密碼、定期輪替 `ADMIN_TOKEN_SECRET` |
 
 ### 9.2 關鍵假設
@@ -479,7 +531,7 @@ Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否
 
 ### A.1 `templates` 表
 
-Phase 1 只需一筆資料：
+Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `tcm-v1`）。每個模板對應 `E:\Projects\YowareTemplate\src\templates\<slug>\` 內的模板套件。
 
 ```json
 {
@@ -488,6 +540,7 @@ Phase 1 只需一筆資料：
   "description": "適合餐飲、食材、精品零售、生活館與個人品牌的單頁式網站。",
   "thumbnail_url": "https://example.com/landing-v1-thumb.jpg",
   "preview_url": "/preview",
+  "admin_url": "/man/landing-v1",
   "base_price": 2800,
   "currency": "HKD",
   "wizard_schema": "[{\"name\":\"brandName\",\"type\":\"text\",\"label\":\"品牌名稱\",\"required\":true},...]",
@@ -496,6 +549,15 @@ Phase 1 只需一筆資料：
   "sort_order": 0
 }
 ```
+
+欄位補充說明：
+
+- `preview_url`：對客戶公開的預覽入口。`landing-v1` 保留 `/preview`；新模板建議使用 `/pre/:slug`。
+- `admin_url`：平台經營者進入模板內容編輯的入口，例如 `/man/landing-v1`。此欄位不對外公開。
+- 未來可能擴充：
+  - `template_type`：用於區分模板風格或產業類別（如 `landing`、`clinic`、`portfolio`），供動態載入器選擇元件。
+  - `adapter_config`：JSON，記錄該模板 adapter 的額外參數（如欄位映射、輸出檔案路徑）。
+  - `demo_content_path`：模板預設 demo 內容的路徑，例如 `E:\Projects\YowareTemplate\src\templates\tcm-v1\demo-content.json`。
 
 ### A.2 `customers` 表
 
@@ -528,7 +590,7 @@ Phase 1 只需一筆資料：
 
 #### `GET /api/templates`
 
-回傳模板清單。
+回傳模板清單。公開回應**不包含** `admin_url`。
 
 ```json
 {
@@ -536,10 +598,23 @@ Phase 1 只需一筆資料：
   "data": [
     {
       "id": "landing-v1",
+      "slug": "landing-v1",
       "name": "日式簡約 Landing Page v1",
       "thumbnail_url": "...",
+      "preview_url": "/preview",
       "price_text": "HKD 2,800 起",
-      "industries": ["餐飲", "零售", "生活館", "個人品牌"]
+      "industries": ["餐飲", "零售", "生活館", "個人品牌"],
+      "template_type": "landing"
+    },
+    {
+      "id": "tcm-v1",
+      "slug": "tcm-v1",
+      "name": "明德中醫 TCM Clinic v1",
+      "thumbnail_url": "...",
+      "preview_url": "/pre/tcm-v1",
+      "price_text": "HKD 3,200 起",
+      "industries": ["醫療", "中醫", "診所"],
+      "template_type": "clinic"
     }
   ]
 }
@@ -547,7 +622,33 @@ Phase 1 只需一筆資料：
 
 #### `GET /api/templates/:slug`
 
-回傳單一模板完整資訊（含 `wizard_schema`）。
+回傳單一模板完整資訊（含 `wizard_schema`、`preview_url`）。公開回應**不包含** `admin_url`。
+
+回傳範例：
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "tcm-v1",
+    "slug": "tcm-v1",
+    "name": "明德中醫 TCM Clinic v1",
+    "description": "適合中醫診所、養生館的專業模板。",
+    "thumbnail_url": "...",
+    "preview_url": "/pre/tcm-v1",
+    "base_price": 3200,
+    "currency": "HKD",
+    "industries": ["醫療", "中醫", "診所"],
+    "template_type": "clinic",
+    "wizard_schema": [
+      { "name": "brandName", "type": "text", "label": "品牌名稱", "required": true },
+      { "name": "physicianName", "type": "text", "label": "醫師姓名", "required": true }
+    ]
+  }
+}
+```
+
+> 根據母機守則 Rule 47，所有 API 回應必須為 UTF-8 JSON，且 `Content-Type` 為 `application/json; charset=utf-8`。
 
 #### `POST /api/orders`
 

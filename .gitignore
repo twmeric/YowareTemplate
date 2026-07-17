@@ -36,5 +36,26 @@ source_code.zip
 # Agent workspace
 .ai/
 
+# WebBridge / debug session artifacts
+context*.txt
+snapshot*.json
+network_*.json
+console_logs.json
+eval_*.js
+fill_*.js
+fetch_*.js
+set_wizard_state.js
+webbridge_helper.py
+extract_context.py
+find_matches.py
+parse_snapshot.py
+page_html.html
+field_renderer.txt
+matches*.txt
+submit_*.txt
+wizard_start.txt
+app_js*.txt
+app_js*.js
+
 # Wrangler / Cloudflare dev output
 .wrangler/

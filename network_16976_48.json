@@ -1,1 +1,0 @@
-{"ok":true,"data":{"requestId":"16976.48","url":"https://jkd-platform-api-worker.jimsbond007.workers.dev/api/orders","method":"POST","status":201,"mimeType":"application/json","base64Encoded":false,"body":{"success":true,"data":{"orderId":11,"publicId":"YWT-20260717-M0VU","status":"pending","createdAt":"2026-07-17T10:19:27.775Z"}}}}

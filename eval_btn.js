@@ -1,1 +1,0 @@
-(() => { const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('確認送出') || b.textContent.includes('送出中')); if (!btn) return { error: 'button not found' }; return { text: btn.textContent.trim(), disabled: btn.disabled, outerHTML: btn.outerHTML.slice(0, 300), hasOnClickAttr: !!btn.onclick, className: btn.className }; })()
