@@ -1,130 +1,200 @@
 {
   "brand": {
-    "name": "港日媽媽生活館",
-    "logo": "M",
-    "tagline": "Japan HK Mama Lifestyle"
+    "name": "日出咖啡 Sunrise Brew",
+    "logo": "S",
+    "tagline": "慢活每一杯，品味手作溫度"
   },
   "nav": {
     "items": [
-      { "label": "品牌故事", "target": "story" },
-      { "label": "精選食材", "target": "products" },
-      { "label": "商務禮籃", "target": "services" },
-      { "label": "聯絡我們", "target": "contact" }
+      {
+        "label": "關於我們",
+        "target": "story"
+      },
+      {
+        "label": "服務",
+        "target": "services"
+      },
+      {
+        "label": "產品",
+        "target": "products"
+      },
+      {
+        "label": "聯絡",
+        "target": "contact"
+      }
     ]
   },
   "hero": {
-    "badge": "Japan HK Mama Lifestyle",
+    "badge": "精品咖啡 · 手作烘焙",
     "titleLines": [
-      "港日媽媽生活館",
-      "為您及家人",
-      "挑選樹上熟的日本原味"
+      "日出咖啡",
+      "Sunrise Brew",
+      "為你沖泡每一日"
     ],
-    "highlightedLines": [1],
-    "description": "由旅居日本多年的岩本太太親自挑選，將最地道、最健康的日本高級食材直送香港，讓您在家也能品嚐到日本的四季滋味。",
+    "highlightedLines": [
+      1
+    ],
+    "description": "選自世界產地直送咖啡豆，每日新鮮烘焙，搭配手工甜點，在溫暖寧靜的空間中，享受屬於你的慢活時光。",
     "primaryButton": {
-      "label": "瀏覽今日精選",
+      "label": "瀏覽產品",
       "target": "products"
     },
     "secondaryButton": {
-      "label": "了解品牌故事",
+      "label": "我們的故事",
       "target": "story"
     },
-    "image": "https://images.unsplash.com/photo-1547986280-fdcf1b207d27?q=80&w=1000&auto=format&fit=crop"
+    "image": "https://pixabay.com/get/ge4559d5758d91e4630ceec5bfc17d1935fb250e8b7585c9051d27e8ee689e4b56bcde39b9100d6bd662ea717e2faaa16350a57ca110f6f4bc9b2d9dcb1374f64_1280.jpg"
   },
   "story": {
-    "title": "關於創辦人：岩本太太",
+    "title": "我們的故事",
     "paragraphs": [
-      "岩本太太曾旅居日本多年，精通日語與翻譯。在繁忙的日本生活中，她曾因過勞而大病一場，這段經歷讓她深刻體會到「醫食同源」的重要性。",
-      "康復後，她開始專注於健康藥膳飲食，並深入日本各地的農場與市場，尋找最天然、最優質的食材。",
-      "「港日媽媽生活館」的誕生，是希望將這份對健康的執著與對日本食材的專業知識，分享給每一位重視家人健康的香港媽媽。"
+      "日出咖啡誕生於對咖啡與手作的熱愛。我們相信，一杯好咖啡不僅是飲品，更是一種生活的儀式感。",
+      "創辦人走訪世界各地咖啡莊園，親自挑選優質生豆，並以手工烘焙方式，保留每一款豆子的獨特風味。",
+      "在這裡，我們希望每位客人都能找到屬於自己的角落，無論是靜心閱讀、專注工作，或是與朋友分享片刻，日出咖啡都為你準備好一杯溫暖。"
     ],
     "features": [
-      "專業日本食材買手",
-      "健康藥膳飲食專家",
-      "旅居日本翻譯背景",
-      "嚴選樹上熟原味"
+      "產地直送咖啡豆",
+      "每日手工烘焙",
+      "季節限定甜點",
+      "舒適閱讀工作空間"
     ],
-    "image": "https://images.unsplash.com/photo-1780498888194-7fad2976fa14?q=80&w=800&auto=format&fit=crop",
-    "quote": "醫食同源，從挑選好食材開始。"
+    "image": "https://pixabay.com/get/g4e878051c90ab423d43f336146733270aa88f1ba4161695d7fd029157fd75ee5fac7e6c5b9bb80713441038ecfb5fb8f17ad3d91093fea81e2c2233487290245_1280.jpg",
+    "quote": "「咖啡是時間的藝術，慢下來，才能品出真味。」—— 創辦人"
   },
   "services": {
-    "title": "核心服務",
-    "subtitle": "全方位滿足您的日本食材需求",
+    "title": "我們的服務",
+    "subtitle": "為你打造專屬的咖啡體驗",
     "items": [
       {
-        "icon": "🥩",
-        "title": "B2C 團購零售",
-        "desc": "嚴選宮崎和牛、空運時令水果，每週直送香港，讓您以最優惠價格享受頂級食材。"
+        "icon": "☕",
+        "title": "手沖咖啡",
+        "desc": "精選單品豆，由專業咖啡師為你手沖，呈現最純粹的風味。"
+      },
+      {
+        "icon": "🥐",
+        "title": "手工甜點",
+        "desc": "每日新鮮製作，搭配咖啡的完美伴侶，季節限定口味驚喜不斷。"
+      },
+      {
+        "icon": "📚",
+        "title": "閱讀空間",
+        "desc": "提供安靜舒適的座位區，適合閱讀、工作或放空。"
+      },
+      {
+        "icon": "💼",
+        "title": "外帶服務",
+        "desc": "忙碌的你也能快速帶走一杯好咖啡，品質不打折。"
       },
       {
         "icon": "🎁",
-        "title": "B2B 商務禮儀",
-        "desc": "提供樹上熟果籃、過大禮禮盒及商務定制禮籃，展現您的尊貴品味與誠意。"
+        "title": "咖啡豆零售",
+        "desc": "多款產地精品咖啡豆，帶回家也能享受專業級沖煮。"
       },
       {
-        "icon": "🍣",
-        "title": "體驗式服務",
-        "desc": "日式到會服務、手掬壽司工作坊，將日本飲食文化帶入您的生活空間。"
+        "icon": "📦",
+        "title": "企業訂製",
+        "desc": "為企業提供咖啡豆批發、活動咖啡吧服務，打造專屬咖啡體驗。"
       }
     ]
   },
   "products": {
-    "title": "今日精選食材",
-    "subtitle": "岩本太太親自挑選，本週最推薦的日本直送美味",
+    "title": "精選產品",
+    "subtitle": "每一款都是我們的心血結晶",
     "viewAllText": "查看全部產品",
     "items": [
       {
-        "id": "1",
-        "name": "A5 鹿兒島和牛肉眼扒 (約 300g)",
-        "price": 480,
-        "originalPrice": 580,
-        "image": "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop",
-        "category": "頂級肉類",
-        "tag": "日本直送"
+        "id": "p1",
+        "name": "衣索比亞 耶加雪菲 手沖咖啡",
+        "price": 55,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g762b21a78b9381b53bb3e2ab65d154b97416ea9f800583fdf1c8c720c551df450bec9908b61dd9a73a587077979e5959a2bda979687436ff71f501b9561e9594_1280.jpg",
+        "category": "咖啡飲品",
+        "tag": "人氣"
       },
       {
-        "id": "2",
-        "name": "樹上熟山梨白桃禮盒 (2入)",
-        "price": 268,
-        "originalPrice": 320,
-        "image": "https://images.unsplash.com/photo-1642372849486-f88b963cb734?q=80&w=800&auto=format&fit=crop",
-        "category": "時令水果",
-        "tag": "人氣熱銷"
+        "id": "p2",
+        "name": "哥倫比亞 蕙蘭 手沖咖啡",
+        "price": 50,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g9ef8ab1d84d7048b2682c5a770e5fea7c2c02deea7ac8653d47cfaf22829bf5e505c803326d546336f19113d19267a07baff4384df778cb85545652e629ce403_1280.jpg",
+        "category": "咖啡飲品",
+        "tag": ""
       },
       {
-        "id": "3",
-        "name": "精選日式果籃 (商務/過大禮)",
-        "price": 880,
-        "originalPrice": 1080,
-        "image": "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop",
-        "category": "商務禮籃",
-        "tag": "專業定制"
+        "id": "p3",
+        "name": "經典拿鐵",
+        "price": 42,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g89ff77e0e72d4ba4f97bf85f6c83f251844563c2f6390071e963a4b7d34d024c431219cb53da630a0b42bc625c0d437c6953ac8ccad38da4d1a42547c28d3f23_1280.jpg",
+        "category": "咖啡飲品",
+        "tag": "熱銷"
       },
       {
-        "id": "4",
-        "name": "靜岡皇冠哈密瓜 (特大)",
-        "price": 398,
-        "originalPrice": 450,
-        "image": "https://images.unsplash.com/photo-1782380370791-25afb178ae22?q=80&w=800&auto=format&fit=crop",
-        "category": "時令水果",
-        "tag": "日本直送"
+        "id": "p4",
+        "name": "季節限定 草莓生乳酪蛋糕",
+        "price": 68,
+        "originalPrice": 78,
+        "image": "https://pixabay.com/get/gc6ca5ee110bbb375912278b87f6d38ac4a12e50ad0464b0aa35d663903ff6f003c4b16603afb4bd79b5215b92d1ab513a09079fa4c0295af364a47fbea7ed99a_1280.jpg",
+        "category": "甜點",
+        "tag": "限量"
+      },
+      {
+        "id": "p5",
+        "name": "法式可頌",
+        "price": 28,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g3d710fce5659e6ecf03823fb8bef9528d110fc5b0b2a95624a31e267046fe5ed20eb35d3a787b42eb5a30213ecc6051517f6cd5c67834ebf86c392609937c58f_1280.jpg",
+        "category": "甜點",
+        "tag": ""
+      },
+      {
+        "id": "p6",
+        "name": "衣索比亞 耶加雪菲 咖啡豆 (200g)",
+        "price": 168,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g7dc1874c1f75fdc7bdac88dba83e57303766b5e63ba7b677e094328ca095bc38f7d0b46f2667be550e3c793e60e74caa38203ff65864eae35925cee5a0e2b3d6_1280.jpg",
+        "category": "咖啡豆",
+        "tag": "推薦"
+      },
+      {
+        "id": "p7",
+        "name": "哥倫比亞 蕙蘭 咖啡豆 (200g)",
+        "price": 148,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g626fdf71c79992e31483c5c89c289d375b5d4007271fc47105ba470e063c30868e9653ecaa57555a6b498ffb3e1f6634e3442274e939e191fa3c572f521c0951_1280.jpg",
+        "category": "咖啡豆",
+        "tag": ""
+      },
+      {
+        "id": "p8",
+        "name": "掛耳咖啡禮盒 (10入)",
+        "price": 198,
+        "originalPrice": 0,
+        "image": "https://pixabay.com/get/g5513cea27470ab3c59d5ca234a6b4dd21e5e85802f46b02d4f988fb15e262dc1bedd19b24e1d9a2c95cb130c9a4ed8b1811a8e4e56dbd0a4ff56f1ad68120212_1280.jpg",
+        "category": "禮盒",
+        "tag": "熱門"
       }
     ]
   },
   "contact": {
-    "title": "準備好品嚐日本原味了嗎？",
-    "description": "不論是家庭聚餐、商務送禮，還是想了解更多食材資訊，歡迎隨時透過 WhatsApp 與我們聯絡。",
+    "title": "聯絡我們",
+    "description": "無論是預約座位、企業訂製或任何疑問，歡迎透過 WhatsApp 與我們聯繫，我們將盡快為你服務。",
     "whatsapp": {
-      "number": "85212345678",
-      "buttonText": "立即 WhatsApp 查詢"
+      "number": "85298765432",
+      "buttonText": "傳送訊息"
     }
   },
   "footer": {
-    "copyright": "© 2024 Japan HK Mama. All rights reserved.",
+    "copyright": "© 2025 日出咖啡 Sunrise Brew. All rights reserved.",
     "socialLinks": [
-      { "platform": "facebook", "url": "#" },
-      { "platform": "instagram", "url": "#" },
-      { "platform": "youtube", "url": "#" }
+      {
+        "platform": "facebook",
+        "url": "https://facebook.com/sunrisebrew"
+      },
+      {
+        "platform": "instagram",
+        "url": "https://instagram.com/sunrisebrew"
+      }
     ]
   }
 }
