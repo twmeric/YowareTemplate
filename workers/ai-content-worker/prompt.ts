@@ -18,12 +18,12 @@ Rules:
 4. Generate 3-6 services and 4-8 products that fit the business.
 5. Prices should be realistic integers in HKD (or the local currency implied by the brief).
 6. WhatsApp number must be a realistic placeholder if not provided: "85200000000".
-7. The brand logo should be a single letter or short symbol.
+7. The brand logo should be a single letter or short symbol. logoImage is optional; leave it empty unless the brief explicitly provides a logo URL.
 8. highlightedLines is a zero-based index array indicating which hero title lines use the accent color. Example: [1].
 
 JSON Schema:
 {
-  "brand": { "name": "string", "logo": "string", "tagline": "string" },
+  "brand": { "name": "string", "logo": "string", "logoImage": "string (optional, URL or empty)", "tagline": "string" },
   "nav": { "items": [{ "label": "string", "target": "string" }] },
   "hero": {
     "badge": "string",

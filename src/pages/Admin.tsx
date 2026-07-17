@@ -272,6 +272,11 @@ const BrandSection: React.FC<{ brand: SiteContent["brand"]; onChange: (v: SiteCo
       <input className={inputClass()} value={brand.logo} onChange={(e) => onChange({ ...brand, logo: e.target.value })} />
     </div>
     <div>
+      <label className={labelClass()}>Logo 圖片 URL（選填，會覆蓋字母）</label>
+      <input className={inputClass()} value={brand.logoImage || ""} onChange={(e) => onChange({ ...brand, logoImage: e.target.value })} />
+      {brand.logoImage && <img src={brand.logoImage} alt="Logo preview" className="mt-2 h-16 w-auto object-contain border border-gray-200 rounded-lg p-2" />}
+    </div>
+    <div>
       <label className={labelClass()}>英文標語</label>
       <input className={inputClass()} value={brand.tagline} onChange={(e) => onChange({ ...brand, tagline: e.target.value })} />
     </div>

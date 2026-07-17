@@ -40,8 +40,10 @@ export interface SiteContent {
   /** Site-wide brand identity */
   brand: {
     name: string;
-    /** Single-letter logo mark, e.g. "M" */
+    /** Single-letter logo mark, e.g. "M". Used when logoImage is empty. */
     logo: string;
+    /** Optional full logo image URL. When provided, overrides the letter mark. */
+    logoImage?: string;
     /** Short English / alternate tagline */
     tagline: string;
   };

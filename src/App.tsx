@@ -68,7 +68,11 @@ const LandingApp: React.FC = () => {
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-md py-3' : 'bg-transparent py-5'}`}>
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-xl">{brand.logo}</div>
+            {brand.logoImage ? (
+              <img src={brand.logoImage} alt={brand.name} className="h-10 w-auto object-contain" />
+            ) : (
+              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-xl">{brand.logo}</div>
+            )}
             <span className="text-xl font-bold tracking-tight text-brand-green">{brand.name}</span>
           </div>
 
@@ -268,7 +272,11 @@ const LandingApp: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm">{brand.logo}</div>
+              {brand.logoImage ? (
+                <img src={brand.logoImage} alt={brand.name} className="h-8 w-auto object-contain" />
+              ) : (
+                <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm">{brand.logo}</div>
+              )}
               <span className="text-lg font-bold text-brand-green">{brand.name}</span>
             </div>
             
