@@ -13,6 +13,10 @@ import {
   Sparkles,
   ArrowLeft,
   Home,
+  Copy,
+  Check,
+  Phone,
+  RotateCcw,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useContent } from "../hooks/useContent";
@@ -59,6 +63,7 @@ const LandingPreview: React.FC = () => {
   const [cart, setCart] = useState<Product[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -110,7 +115,7 @@ const LandingPreview: React.FC = () => {
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans selection:bg-brand-green selection:text-white">
       {isGenerated ? (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-brand-green text-white px-4 py-3">
-          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-sm">
+          <div className="container mx-auto flex flex-col lg:flex-row items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               <span>
@@ -118,12 +123,33 @@ const LandingPreview: React.FC = () => {
                 {publicId ? `（訂單編號：${publicId}）` : ""}
               </span>
             </div>
-            <Link
-              to="/templates"
-              className="inline-flex items-center gap-1 underline hover:text-brand-red transition-colors"
-            >
-              回到模板列表 <ArrowRight className="w-3 h-3" />
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-medium transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "已複製" : "複製預覽連結"}
+              </button>
+              <a
+                href={`https://wa.me/${import.meta.env.VITE_SUPPORT_WHATSAPP || contact.whatsapp.number}?text=${encodeURIComponent(`你好，我想查詢訂單 ${publicId || ""} 的網站製作進度。`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#25D366] hover:bg-[#128C7E] rounded-full font-bold transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5" /> WhatsApp 查詢
+              </a>
+              <Link
+                to="/templates"
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white text-brand-green rounded-full font-bold hover:bg-brand-bg transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> 重新製作
+              </Link>
+            </div>
           </div>
         </div>
       ) : (
