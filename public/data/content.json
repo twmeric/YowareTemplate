@@ -2,7 +2,8 @@
   "brand": {
     "name": "日出咖啡 Sunrise Brew",
     "logo": "S",
-    "tagline": "慢活每一杯，品味手作溫度"
+    "tagline": "慢活每一杯，品味手作溫度",
+    "logoImage": "https://pub-1424891a0bc54b758dea83d25b65a5d9.r2.dev/1784256552044-rr7u62ip.png"
   },
   "nav": {
     "items": [
