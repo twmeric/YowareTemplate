@@ -127,6 +127,24 @@ const StartWizardPage: React.FC = () => {
     localStorage.setItem(STORAGE_KEY(slug), JSON.stringify(data));
   }, [data, slug]);
 
+  const schemaMap = useMemo(() => {
+    const map = new Map<string, { label: string; required?: boolean }>();
+    template?.wizardSchema?.forEach((field) => {
+      map.set(field.name, { label: field.label, required: field.required });
+    });
+    return map;
+  }, [template]);
+
+  const visibleStep2Fields = useMemo(() => {
+    return fieldOrderStep2.filter((name) => schemaMap.has(name));
+  }, [schemaMap]);
+
+  const visibleStep3Fields = useMemo(() => {
+    return fieldOrderStep3.filter((name) => schemaMap.has(name));
+  }, [schemaMap]);
+
+  const totalSteps = 2 + (visibleStep2Fields.length > 0 ? 1 : 0) + (visibleStep3Fields.length > 0 ? 1 : 0);
+
   // Poll WhatsApp verification status
   useEffect(() => {
     if (!verifyCode || verifyStatus !== "polling") return;
@@ -169,24 +187,6 @@ const StartWizardPage: React.FC = () => {
       clearTimeout(timer);
     };
   }, [verifyCode, verifyStatus, totalSteps]);
-
-  const schemaMap = useMemo(() => {
-    const map = new Map<string, { label: string; required?: boolean }>();
-    template?.wizardSchema?.forEach((field) => {
-      map.set(field.name, { label: field.label, required: field.required });
-    });
-    return map;
-  }, [template]);
-
-  const visibleStep2Fields = useMemo(() => {
-    return fieldOrderStep2.filter((name) => schemaMap.has(name));
-  }, [schemaMap]);
-
-  const visibleStep3Fields = useMemo(() => {
-    return fieldOrderStep3.filter((name) => schemaMap.has(name));
-  }, [schemaMap]);
-
-  const totalSteps = 2 + (visibleStep2Fields.length > 0 ? 1 : 0) + (visibleStep3Fields.length > 0 ? 1 : 0);
 
   const displayedStep = step;
 
