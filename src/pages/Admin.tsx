@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2, ArrowLeft, Share2, Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { login, logout, loadContent, saveContent, setToken, AdminAPIError, getTokenRole } from "../api/admin";
 import ImageInput from "../components/admin/ImageInput";
 import MediaLibrary from "../components/admin/MediaLibrary";
@@ -25,8 +25,13 @@ const DEFAULT_CONTENT: SiteContent = {
   footer: { copyright: "", socialLinks: [] },
 };
 
-const Admin: React.FC = () => {
+interface AdminProps {
+  shared?: boolean;
+}
+
+const Admin: React.FC<AdminProps> = ({ shared = false }) => {
   document.title = "網站後台管理";
+  const { slug } = useParams<{ slug?: string }>();
   const [token, setTokenState] = useState<string | null>(localStorage.getItem("jkd_admin_token"));
   const [role, setRole] = useState<"admin" | "demo" | null>(getTokenRole());
   const isDemo = role === "demo";
@@ -107,7 +112,7 @@ const Admin: React.FC = () => {
   };
 
   const handleShareManage = async () => {
-    const url = `${window.location.origin}/man`;
+    const url = slug ? `${window.location.origin}/man/${slug}` : `${window.location.origin}/man`;
     try {
       if (navigator.share) {
         await navigator.share({ title: document.title, url });
@@ -210,14 +215,16 @@ const Admin: React.FC = () => {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green text-white rounded-full text-sm font-bold shadow-sm hover:bg-brand-red transition-colors animate-pulse"
-              title="返回主頁"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">返回主頁</span>
-            </Link>
+            {!shared && (
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green text-white rounded-full text-sm font-bold shadow-sm hover:bg-brand-red transition-colors animate-pulse"
+                title="返回主頁"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">返回主頁</span>
+              </Link>
+            )}
             <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white font-bold">
               {content.brand.logo || "A"}
             </div>

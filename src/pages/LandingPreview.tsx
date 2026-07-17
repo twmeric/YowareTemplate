@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useParams, Link } from "react-router-dom";
 import {
   ShoppingCart,
   Menu,
@@ -35,6 +35,7 @@ interface LandingPreviewProps {
 
 const LandingPreview: React.FC<LandingPreviewProps> = ({ shared = false }) => {
   const [searchParams] = useSearchParams();
+  const { slug } = useParams<{ slug?: string }>();
   const isGenerated = searchParams.get("mode") === "generated";
   const isShared = shared || searchParams.get("shared") === "1";
   const publicId = searchParams.get("publicId");
@@ -43,7 +44,7 @@ const LandingPreview: React.FC<LandingPreviewProps> = ({ shared = false }) => {
   const [shareCopied, setShareCopied] = useState(false);
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/pre`;
+    const shareUrl = slug ? `${window.location.origin}/pre/${slug}` : `${window.location.origin}/pre`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -66,7 +67,7 @@ const LandingPreview: React.FC<LandingPreviewProps> = ({ shared = false }) => {
     }
   };
 
-  const fetched = useContent();
+  const fetched = useContent(slug);
   const [generatedContent, setGeneratedContent] = useState<SiteContent | null>(null);
   const [generatedLoading, setGeneratedLoading] = useState(isGenerated);
   const [generatedError, setGeneratedError] = useState<string | null>(null);

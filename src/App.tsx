@@ -22,9 +22,9 @@ const App: React.FC = () => {
         <Route path="/start/:slug" element={<StartWizardPage />} />
         <Route path="/order-success" element={<OrderSuccessPage />} />
         <Route path="/preview" element={<LandingPreview />} />
-        <Route path="/pre" element={<LandingPreview shared />} />
+        <Route path="/pre/:slug?" element={<LandingPreview shared />} />
         <Route path="/manage" element={<Admin />} />
-        <Route path="/man" element={<Admin />} />
+        <Route path="/man/:slug?" element={<Admin shared />} />
         <Route path="/platform-admin" element={<PlatformAdminPage />} />
         <Route path="/manage/*" element={<Admin />} />
         <Route path="*" element={<NotFoundPage />} />

@@ -20,7 +20,7 @@ const DEFAULT_CONTENT: SiteContent = {
   footer: { copyright: '', socialLinks: [] }
 };
 
-export function useContent() {
+export function useContent(slug?: string) {
   const [content, setContent] = useState<SiteContent>(DEFAULT_CONTENT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +28,25 @@ export function useContent() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch('/data/content.json');
-        if (!response.ok) {
-          throw new Error(`Failed to load content: ${response.status}`);
+        // Future multi-template support: try slug-specific content first
+        const paths = slug ? [`/data/content-${slug}.json`, '/data/content.json'] : ['/data/content.json'];
+        let lastErr: Error | null = null;
+        for (const path of paths) {
+          try {
+            const response = await fetch(path);
+            if (!response.ok) {
+              if (response.status === 404) continue;
+              throw new Error(`Failed to load content: ${response.status}`);
+            }
+            const data = (await response.json()) as SiteContent;
+            setContent(data);
+            setError(null);
+            return;
+          } catch (err) {
+            lastErr = err instanceof Error ? err : new Error('Unknown error');
+          }
         }
-        const data = (await response.json()) as SiteContent;
-        setContent(data);
+        throw lastErr || new Error('Failed to load content');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
@@ -42,7 +55,7 @@ export function useContent() {
     };
 
     load();
-  }, []);
+  }, [slug]);
 
   return { content, loading, error };
 }
