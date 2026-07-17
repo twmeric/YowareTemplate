@@ -29,19 +29,21 @@ const socialIconMap: Record<string, React.ReactNode> = {
   youtube: <Youtube className="w-6 h-6" />,
 };
 
-const LandingPreview: React.FC = () => {
+interface LandingPreviewProps {
+  shared?: boolean;
+}
+
+const LandingPreview: React.FC<LandingPreviewProps> = ({ shared = false }) => {
   const [searchParams] = useSearchParams();
   const isGenerated = searchParams.get("mode") === "generated";
-  const isShared = searchParams.get("shared") === "1";
+  const isShared = shared || searchParams.get("shared") === "1";
   const publicId = searchParams.get("publicId");
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
   const handleShare = async () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("shared", "1");
-    const shareUrl = url.toString();
+    const shareUrl = `${window.location.origin}/pre`;
     try {
       if (navigator.share) {
         await navigator.share({

@@ -107,7 +107,7 @@ const Admin: React.FC = () => {
   };
 
   const handleShareManage = async () => {
-    const url = `${window.location.origin}/manage`;
+    const url = `${window.location.origin}/man`;
     try {
       if (navigator.share) {
         await navigator.share({ title: document.title, url });
