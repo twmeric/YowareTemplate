@@ -108,7 +108,7 @@ const TemplateDetailPage: React.FC = () => {
                     </span>
                   )}
                   <span className="text-jkd-gold text-sm font-medium">
-                    {template.currency} {template.basePrice.toLocaleString()} 起
+                    {template.currency}{template.basePrice.toLocaleString()}起
                   </span>
                 </div>
 

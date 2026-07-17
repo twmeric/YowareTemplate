@@ -129,7 +129,7 @@ const TemplatesPage: React.FC = () => {
 
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-jkd-gray-400/20">
                     <span className="text-sm font-medium text-jkd-gold">
-                      {template.currency} {template.basePrice?.toLocaleString() ?? 0} 起
+                      {template.currency}{template.basePrice?.toLocaleString() ?? 0}起
                     </span>
                     <Link
                       to={`/templates/${template.slug}`}

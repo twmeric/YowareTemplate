@@ -108,7 +108,7 @@ const LandingPreview: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans selection:bg-brand-green selection:text-white">
-      {isGenerated && (
+      {isGenerated ? (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-brand-green text-white px-4 py-3">
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-sm">
             <div className="flex items-center gap-2">
@@ -126,11 +126,26 @@ const LandingPreview: React.FC = () => {
             </Link>
           </div>
         </div>
+      ) : (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-brand-green text-white px-4 py-3">
+          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span>這是模板預覽，你可以生成一個屬於自己的網站</span>
+            </div>
+            <Link
+              to="/start/landing-v1"
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-white text-brand-green rounded-full font-bold text-xs hover:bg-brand-bg transition-colors"
+            >
+              立即生成 <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* Header */}
       <header
-        className={`fixed ${isGenerated ? "top-10" : "top-0"} left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-10 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"
         }`}
       >
@@ -138,9 +153,7 @@ const LandingPreview: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className={`hidden sm:flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                scrolled ? "text-brand-green hover:text-brand-red" : "text-brand-green hover:text-brand-red"
-              }`}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green text-white rounded-full text-sm font-bold shadow-md hover:bg-brand-red transition-colors animate-pulse"
               title="返回主頁"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -148,10 +161,10 @@ const LandingPreview: React.FC = () => {
             </Link>
             <Link
               to="/"
-              className="sm:hidden p-2 rounded-full transition-colors"
+              className="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-brand-green text-white rounded-full shadow-md hover:bg-brand-red transition-colors animate-pulse"
               title="返回主頁"
             >
-              <Home className={`w-5 h-5 ${scrolled ? "text-brand-green" : "text-brand-green"}`} />
+              <Home className="w-5 h-5" />
             </Link>
             <div
               className="flex items-center gap-2 cursor-pointer"
@@ -229,7 +242,7 @@ const LandingPreview: React.FC = () => {
         {/* Hero Section */}
         <section
           id="hero"
-          className={`relative ${isGenerated ? "pt-40" : "pt-32"} pb-20 md:pt-48 md:pb-32 overflow-hidden`}
+          className="relative pt-40 pb-20 md:pt-48 md:pb-32 overflow-hidden"
         >
           <div className="container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 text-center md:text-left z-10">

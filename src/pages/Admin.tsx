@@ -171,11 +171,11 @@ const Admin: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="flex items-center gap-2 text-brand-green hover:text-brand-red transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green text-white rounded-full text-sm font-bold shadow-sm hover:bg-brand-red transition-colors animate-pulse"
               title="返回主頁"
             >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline text-sm font-medium">返回主頁</span>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">返回主頁</span>
             </Link>
             <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white font-bold">
               {content.brand.logo || "A"}
