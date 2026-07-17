@@ -41,7 +41,7 @@ React 應用在執行期載入此 JSON，再動態渲染頁面。
 
 ## 自訂後台 UI
 
-部署後訪問 `https://<your-domain>/admin`，使用 Admin API Worker 設定的密碼登入。
+部署後訪問 `https://<your-domain>/manage`，使用 Admin API Worker 設定的密碼登入。
 
 設定方式：
 
@@ -74,13 +74,13 @@ src/
   api/              後台 API 客戶端
   components/       React 組件
   hooks/            內容載入 Hook
-  pages/            頁面（含後台 Admin）
+  pages/            頁面（含後台 Manage）
   types/            TypeScript 內容型別
   App.tsx           單頁應用入口
 workers/
   admin-api-worker/    自訂後台 API（所有站共用）
   ai-content-worker/   DeepSeek + Pixabay 內容生成 Worker
-  oauth-gateway/       GitHub OAuth Gateway（legacy，已改用自訂後台）
+  oauth-gateway/       GitHub OAuth Gateway（legacy，已改用自訂後台 /manage）
 ```
 
 ## 授權

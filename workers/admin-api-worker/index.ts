@@ -224,7 +224,7 @@ export default {
 
         const exp = Math.floor(Date.now() / 1000) + expiresInHours * 3600;
         const token = await signJWT({ sub: "admin", site, exp }, env.ADMIN_TOKEN_SECRET);
-        const adminUrl = `https://${site}/admin?token=${encodeURIComponent(token)}`;
+        const adminUrl = `https://${site}/manage?token=${encodeURIComponent(token)}`;
         return jsonResponse({ success: true, token, url: adminUrl, expiresAt: new Date(exp * 1000).toISOString() });
       }
 

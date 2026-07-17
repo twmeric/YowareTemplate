@@ -47,7 +47,7 @@ Worker 會自動從 `wrangler.toml` 讀取 `GITHUB_REPO`。
 
 登入後台有兩種方式：
 
-1. **密碼登入**：直接訪問 `https://<客戶網域>/admin`，輸入 `ADMIN_PASSWORD`。
+1. **密碼登入**：直接訪問 `https://<客戶網域>/manage`，輸入 `ADMIN_PASSWORD`。
 2. **自動登入連結**：呼叫 Worker 產生一次性 token URL，適合寄給客戶：
 
 ```bash
@@ -56,7 +56,7 @@ curl -X POST https://jkd-admin-api-worker.你的子網域.workers.dev/api/genera
   -d '{"password":"你的ADMIN_PASSWORD","expiresInHours":168}'
 ```
 
-回傳包含 `url`，客戶開啟後會自動登入。
+回傳包含 `url`（網址為 `/manage?token=...`），客戶開啟後會自動登入。
 
 ---
 
@@ -113,7 +113,7 @@ git push
 ## 步驟 4：驗證
 
 - 訪問客戶網站，確認內容正確渲染
-- 訪問 `https://<客戶網域>/admin`，使用 `ADMIN_PASSWORD` 登入，測試修改內容並儲存
+- 訪問 `https://<客戶網域>/manage`，使用 `ADMIN_PASSWORD` 登入，測試修改內容並儲存
 - 檢查 AI Worker 執行記錄（Wrangler Logs / Cloudflare Dashboard）
 
 ---

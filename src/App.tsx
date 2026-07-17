@@ -5,7 +5,7 @@ import { useContent } from './hooks/useContent';
 import Admin from './pages/Admin';
 import type { Product, SocialLink } from './types/content';
 
-const isAdminRoute = window.location.pathname.startsWith('/admin');
+const isAdminRoute = window.location.pathname.startsWith('/manage');
 
 const socialIconMap: Record<string, React.ReactNode> = {
   facebook: <Facebook className="w-6 h-6" />,
