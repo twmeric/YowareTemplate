@@ -15,9 +15,9 @@ import { z } from "zod";
 
 export interface Env {
   DB: D1Database;
-  OWNER_EMAIL: string;
-  EMAIL_API_KEY: string;
-  FROM_EMAIL: string;
+  CLOUDWAPI_API_KEY: string;
+  CLOUDWAPI_SENDER: string;
+  CLOUDWAPI_RECEIVER: string;
   PLATFORM_ORIGIN: string;
   RATE_LIMIT_PER_HOUR: string;
   ADMIN_TOKEN_SECRET: string;
@@ -172,11 +172,10 @@ async function getOrCreateCustomer(
   return result.meta.last_row_id as number;
 }
 
-async function sendNotification(
+async function sendWhatsAppNotification(
   env: Env,
   order: {
     publicId: string;
-    id: number;
     customerName: string;
     customerEmail: string;
     customerWhatsapp?: string;
@@ -185,49 +184,51 @@ async function sendNotification(
     briefSummary: string;
   }
 ): Promise<boolean> {
-  if (!env.OWNER_EMAIL || !env.EMAIL_API_KEY || !env.FROM_EMAIL) {
-    console.warn("Notification skipped: missing email configuration");
+  if (!env.CLOUDWAPI_API_KEY || !env.CLOUDWAPI_SENDER) {
+    console.warn("WhatsApp notification skipped: missing CloudWapi configuration");
     return false;
   }
 
-  const subject = `[新訂單] ${order.publicId} - ${order.brandName || order.customerName}`;
-  const html = `
-    <h2>收到新訂單</h2>
-    <p><strong>訂單編號：</strong>${order.publicId}</p>
-    <p><strong>模板：</strong>${order.templateName}</p>
-    <p><strong>客戶姓名：</strong>${order.customerName}</p>
-    <p><strong>客戶 Email：</strong>${order.customerEmail}</p>
-    <p><strong>客戶 WhatsApp：</strong>${order.customerWhatsapp || "未提供"}</p>
-    <p><strong>品牌名稱：</strong>${order.brandName || "未提供"}</p>
-    <p><strong>需求摘要：</strong>${order.briefSummary}</p>
-    <p><a href="https://yowaretemplate.pages.dev/manage/orders">前往管理後台</a></p>
-  `;
+  // 若未單獨設定接收號碼，則預設發給 sender 自己
+  const receiver = env.CLOUDWAPI_RECEIVER || env.CLOUDWAPI_SENDER;
+  const sender = env.CLOUDWAPI_SENDER.replace(/\D/g, "");
+  const number = receiver.replace(/\D/g, "");
+
+  const message =
+    `【YowareTemplate 新訂單】\n` +
+    `訂單編號：${order.publicId}\n` +
+    `模板：${order.templateName}\n` +
+    `客戶姓名：${order.customerName}\n` +
+    `客戶 Email：${order.customerEmail}\n` +
+    `客戶 WhatsApp：${order.customerWhatsapp || "未提供"}\n` +
+    `品牌名稱：${order.brandName || "未提供"}\n` +
+    `需求摘要：${order.briefSummary}\n` +
+    `後台連結：https://yowaretemplate.pages.dev/manage/orders`;
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.EMAIL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: env.FROM_EMAIL,
-        to: env.OWNER_EMAIL,
-        subject,
-        html,
-      }),
+    const encodedMessage = encodeURIComponent(message);
+    const url = `https://unofficial.cloudwapi.in/send-message?` +
+      `api_key=${encodeURIComponent(env.CLOUDWAPI_API_KEY)}&` +
+      `sender=${encodeURIComponent(sender)}&` +
+      `number=${encodeURIComponent(number)}&` +
+      `message=${encodedMessage}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Resend API error:", res.status, text);
-      return false;
+    const result = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+
+    if (result.status === true || result.status === "success") {
+      return true;
     }
 
-    return true;
+    console.error("CloudWapi error:", result.msg || JSON.stringify(result));
+    return false;
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
-    console.error("Notification fetch error:", message);
+    console.error("WhatsApp notification fetch error:", message);
     return false;
   }
 }
@@ -382,7 +383,7 @@ export default {
         const sellingPoints = String(answers.sellingPoints || "");
         const briefSummary = sellingPoints.slice(0, 200);
 
-        const notified = await sendNotification(env, {
+        const notified = await sendWhatsAppNotification(env, {
           publicId,
           id: orderId,
           customerName: data.customer.name,
@@ -401,7 +402,7 @@ export default {
           await env.DB.prepare(
             "INSERT INTO order_events (order_id, event, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)"
           )
-            .bind(orderId, "notified", "system", JSON.stringify({ channel: "email" }), notifiedAt)
+            .bind(orderId, "notified", "system", JSON.stringify({ channel: "whatsapp" }), notifiedAt)
             .run();
         }
 

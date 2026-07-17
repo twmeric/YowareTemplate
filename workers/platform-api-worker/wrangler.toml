@@ -8,11 +8,11 @@ database_name = "yowaretemplate-platform-db"
 database_id = "931be9df-48fe-43ef-8270-dda773b8f573"
 
 [vars]
-FROM_EMAIL = "noreply@yowaretemplate.pages.dev"
 PLATFORM_ORIGIN = "https://yowaretemplate.pages.dev"
 RATE_LIMIT_PER_HOUR = "5"
 
 # Secrets to set via `wrangler secret put` after deploy:
-#   OWNER_EMAIL
-#   EMAIL_API_KEY
+#   CLOUDWAPI_API_KEY
+#   CLOUDWAPI_SENDER
+#   CLOUDWAPI_RECEIVER (optional; defaults to CLOUDWAPI_SENDER)
 #   ADMIN_TOKEN_SECRET
