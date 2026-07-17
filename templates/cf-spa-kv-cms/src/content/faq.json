@@ -1,0 +1,26 @@
+{
+  "sectionTitle": "FAQ",
+  "sectionSubtitle": "Common questions from new customers.",
+  "items": [
+    {
+      "q": "What should I prepare for the first visit?",
+      "a": "Replace this with your own answer. Keep it concise and helpful."
+    },
+    {
+      "q": "How much does it cost?",
+      "a": "Replace this with your own pricing or fee structure."
+    },
+    {
+      "q": "How often should I return?",
+      "a": "Replace this with your recommended follow-up schedule."
+    },
+    {
+      "q": "Can I combine this with other services?",
+      "a": "Replace this with guidance on compatibility with other services."
+    },
+    {
+      "q": "Is this suitable for children or seniors?",
+      "a": "Replace this with information about age groups you serve."
+    }
+  ]
+}

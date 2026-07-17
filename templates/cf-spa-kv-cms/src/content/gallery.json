@@ -1,0 +1,37 @@
+{
+  "sectionTitle": "Gallery",
+  "sectionSubtitle": "Photos that showcase your work, team or space.",
+  "disclaimer": "Replace these placeholder entries with your own images and captions.",
+  "items": [
+    {
+      "category": "Category A",
+      "image": "/assets/images/gallery-01.jpg",
+      "alt": "Gallery image 1"
+    },
+    {
+      "category": "Category B",
+      "image": "/assets/images/gallery-02.jpg",
+      "alt": "Gallery image 2"
+    },
+    {
+      "category": "Category C",
+      "image": "/assets/images/gallery-03.jpg",
+      "alt": "Gallery image 3"
+    },
+    {
+      "category": "Category A",
+      "image": "/assets/images/gallery-04.jpg",
+      "alt": "Gallery image 4"
+    },
+    {
+      "category": "Category B",
+      "image": "/assets/images/gallery-05.jpg",
+      "alt": "Gallery image 5"
+    },
+    {
+      "category": "Category C",
+      "image": "/assets/images/gallery-06.jpg",
+      "alt": "Gallery image 6"
+    }
+  ]
+}

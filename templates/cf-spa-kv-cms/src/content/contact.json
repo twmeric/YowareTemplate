@@ -1,0 +1,21 @@
+{
+  "sectionTitle": "Contact & booking",
+  "sectionSubtitle": "Reach out via WhatsApp or phone and we will reply as soon as possible.",
+  "ctaText": "Ask us on WhatsApp",
+  "transport": {
+    "title": "Getting here",
+    "description": "Describe how customers can reach your location.",
+    "busInfo": "Public transport options"
+  },
+  "clinicHours": [
+    { "day": "Monday", "am": "—", "pm": "12:00–18:00", "eve": "—" },
+    { "day": "Tuesday", "am": "—", "pm": "12:00–18:00", "eve": "—" },
+    { "day": "Wednesday", "am": "—", "pm": "12:00–18:00", "eve": "—" },
+    { "day": "Thursday", "am": "—", "pm": "12:00–18:00", "eve": "—" },
+    { "day": "Friday", "am": "—", "pm": "12:00–18:00", "eve": "—" },
+    { "day": "Saturday", "am": "—", "pm": "12:00–18:00", "eve": "—" },
+    { "day": "Sunday", "am": "—", "pm": "12:00–18:00", "eve": "—" }
+  ],
+  "hoursNote": "Replace with your own opening-hours note.",
+  "mapEmbedUrl": "YOUR_GOOGLE_MAPS_EMBED_URL"
+}

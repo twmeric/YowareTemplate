@@ -7,6 +7,8 @@ export interface TemplateSummary {
   name: string;
   description: string;
   thumbnailUrl: string;
+  previewUrl: string;
+  adminUrl: string;
   basePrice: number;
   currency: string;
   isFeatured: boolean;
@@ -27,6 +29,7 @@ export interface TemplateDetail {
   description: string;
   thumbnailUrl: string;
   previewUrl: string;
+  adminUrl: string;
   basePrice: number;
   currency: string;
   wizardSchema: WizardField[];

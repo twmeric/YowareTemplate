@@ -1,0 +1,14 @@
+{
+  "brandSlogan": "Your brand slogan here.\nMake it memorable and aligned with your values.",
+  "quickLinks": [
+    { "label": "About", "href": "#about" },
+    { "label": "Services", "href": "#services" },
+    { "label": "FAQ", "href": "#faq" },
+    { "label": "Contact", "href": "#contact" }
+  ],
+  "socialLinks": [
+    { "platform": "facebook", "label": "Facebook page", "url": "" },
+    { "platform": "youtube", "label": "YouTube channel", "url": "" }
+  ],
+  "disclaimer": "Replace with your own disclaimer or legal notice."
+}

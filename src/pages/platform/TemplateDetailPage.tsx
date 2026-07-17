@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import PlatformLayout from "./PlatformLayout";
+import SafeLink from "../../components/SafeLink";
 import { getTemplate, type TemplateDetail } from "../../api/platform";
 
 const DEMO_PASSWORD = "demo123";
@@ -142,6 +143,23 @@ const TemplateDetailPage: React.FC = () => {
                   ) : (
                     <p className="text-jkd-gray-300 text-sm">暫無必填資料。</p>
                   )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                  <SafeLink
+                    to={template.previewUrl || `/pre/${template.slug}`}
+                    className="flex-1 px-6 py-3 bg-jkd-black-700 border border-jkd-gray-400/20 text-jkd-white rounded-full font-bold hover:border-jkd-gold/50 hover:bg-jkd-black-900 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Eye className="w-5 h-5 text-jkd-gold" />
+                    預覽前台
+                  </SafeLink>
+                  <SafeLink
+                    to={template.adminUrl || `/man/${template.slug}`}
+                    className="flex-1 px-6 py-3 bg-jkd-black-700 border border-jkd-gray-400/20 text-jkd-white rounded-full font-bold hover:border-jkd-gold/50 hover:bg-jkd-black-900 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Settings className="w-5 h-5 text-jkd-gold" />
+                    體驗後台
+                  </SafeLink>
                 </div>
 
                 <Link

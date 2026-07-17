@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, ArrowRight, LayoutTemplate, Sparkles, Eye, Settings } from "lucide-react";
 import PlatformLayout from "./PlatformLayout";
+import SafeLink from "../../components/SafeLink";
 import { listTemplates, type TemplateSummary } from "../../api/platform";
 
 const DEMO_PASSWORD = "demo123";
@@ -93,8 +94,8 @@ const HomePage: React.FC = () => {
                 key={template.slug}
                 className="group bg-jkd-black-800 rounded-2xl border border-jkd-gray-400/20 overflow-hidden hover:border-jkd-gold/40 hover:shadow-2xl hover:shadow-jkd-gold/10 transition-all flex flex-col"
               >
-                <Link
-                  to={template.previewUrl || "/preview"}
+                <SafeLink
+                  to={template.previewUrl || `/pre/${template.slug}`}
                   className="aspect-[4/3] bg-jkd-black-700 overflow-hidden relative block"
                 >
                   {template.thumbnailUrl ? (
@@ -109,7 +110,7 @@ const HomePage: React.FC = () => {
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                </Link>
+                </SafeLink>
 
                 <div className="p-6 flex flex-col flex-1">
                   <h3 className="text-lg font-bold text-jkd-white mb-2">
@@ -121,8 +122,8 @@ const HomePage: React.FC = () => {
 
                   {/* 先體驗，再決定 */}
                   <div className="space-y-3 mb-5">
-                    <Link
-                      to={template.previewUrl || "/preview"}
+                    <SafeLink
+                      to={template.previewUrl || `/pre/${template.slug}`}
                       className="flex items-center gap-3 p-3.5 bg-jkd-black-700 border border-jkd-gray-400/20 rounded-xl hover:border-jkd-gold/50 hover:bg-jkd-black-900 transition-all group/link"
                     >
                       <div className="w-10 h-10 bg-jkd-gold/10 text-jkd-gold rounded-full flex items-center justify-center group-hover/link:scale-110 transition-transform">
@@ -132,10 +133,10 @@ const HomePage: React.FC = () => {
                         <p className="font-bold text-jkd-white text-sm">預覽前台網站</p>
                         <p className="text-xs text-jkd-gray-300">看實際網頁效果</p>
                       </div>
-                    </Link>
+                    </SafeLink>
 
-                    <Link
-                      to="/manage"
+                    <SafeLink
+                      to={template.adminUrl || `/man/${template.slug}`}
                       className="flex items-center gap-3 p-3.5 bg-jkd-black-700 border border-jkd-gray-400/20 rounded-xl hover:border-jkd-gold/50 hover:bg-jkd-black-900 transition-all group/link"
                     >
                       <div className="w-10 h-10 bg-jkd-gold/10 text-jkd-gold rounded-full flex items-center justify-center group-hover/link:scale-110 transition-transform">
@@ -145,7 +146,7 @@ const HomePage: React.FC = () => {
                         <p className="font-bold text-jkd-white text-sm">體驗後台管理</p>
                         <p className="text-xs text-jkd-gray-300">Demo 密碼：{DEMO_PASSWORD}</p>
                       </div>
-                    </Link>
+                    </SafeLink>
                   </div>
 
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-jkd-gray-400/20">

@@ -1,0 +1,16 @@
+{
+  "siteName": "Your Site Name",
+  "doctorName": "Your Name",
+  "doctorTitle": "Your Title",
+  "whatsappNumber": "YOUR_WHATSAPP_NUMBER",
+  "whatsappDefaultMessage": "Hello, I would like to make an appointment",
+  "whatsappInquiryMessage": "Hello, I would like to ask about opening hours",
+  "phone": "YOUR_PHONE_NUMBER",
+  "address": "YOUR_ADDRESS",
+  "addressDetail": "YOUR_ADDRESS_DETAIL",
+  "registrationNumber": "YOUR_REGISTRATION_NUMBER",
+  "socialLinks": {
+    "facebook": "",
+    "youtube": ""
+  }
+}

@@ -76,6 +76,24 @@ brief.txt → DeepSeek AI → Pixabay 圖片 → public/data/content.json → Cl
 
 詳細設定請參閱 `docs/` 資料夾。
 
+## 多模板支援
+
+平台現已支援多模板。模板資料與預覽/後台網址均儲存在 D1 `templates` 表中：
+
+| 模板 | 類型 | 前台預覽 | 後台管理 |
+|------|------|----------|----------|
+| `landing-v1` | 平台內建 Landing Page | `/pre/landing-v1` | `/man/landing-v1` |
+| `tcm-v1` | 外部中醫診所模板 | `https://yowaretemplate-tcm.pages.dev` | `https://yowaretemplate-tcm.pages.dev/admin` |
+
+第二套模板原始碼位於 `templates/cf-spa-kv-cms/`，需獨立部署為 Cloudflare Pages 專案。詳見 `templates/cf-spa-kv-cms/DEPLOY.md`。
+
+新增模板時，請在 `workers/platform-api-worker/migrations/` 新增 migration，並執行：
+
+```bash
+cd workers/platform-api-worker
+pnpm dlx wrangler d1 migrations apply yowaretemplate-platform-db
+```
+
 ## 目錄說明
 
 ```
@@ -91,10 +109,13 @@ src/
   pages/            頁面（含後台 Manage）
   types/            TypeScript 內容型別
   App.tsx           單頁應用入口
+templates/
+  cf-spa-kv-cms/    第二套中醫診所模板（獨立 Pages 專案）
 workers/
   admin-api-worker/    自訂後台 API（所有站共用）
   ai-content-worker/   DeepSeek + Pixabay 內容生成 Worker
   oauth-gateway/       GitHub OAuth Gateway（legacy，已改用自訂後台 /manage）
+  platform-api-worker/ 平台 API（模板、訂單、驗證）
 ```
 
 ## 授權

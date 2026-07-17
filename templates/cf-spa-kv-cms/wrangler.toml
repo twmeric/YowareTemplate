@@ -1,0 +1,10 @@
+name = "yowaretemplate-tcm"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+# KV：CMS 內容儲存（每專案應使用獨立的 namespace）
+# 1. 執行：pnpm dlx wrangler kv namespace create "CMS_KV"
+# 2. 把回傳的 id 貼到下方
+[[kv_namespaces]]
+binding = "CMS_KV"
+id = "YOUR_KV_NAMESPACE_ID"

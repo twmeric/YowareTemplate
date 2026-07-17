@@ -1,0 +1,33 @@
+{
+  "sectionTitle": "About us",
+  "sectionSubtitle": "A short paragraph about your business, your values and what makes you different.",
+  "timelineTitle": "Our journey",
+  "timeline": [
+    { "year": "2010", "title": "Founded", "desc": "How and why it all started" },
+    { "year": "", "title": "Milestone two", "desc": "A key achievement or turning point" },
+    { "year": "", "title": "Milestone three", "desc": "Another important step" },
+    { "year": "2020", "title": "Expanded", "desc": "Growth or new services launched" },
+    { "year": "", "title": "Milestone five", "desc": "Recent development" },
+    { "year": "Today", "title": "Serving you", "desc": "Where you are now" }
+  ],
+  "philosophyTitle": "Our values",
+  "philosophyCards": [
+    {
+      "title": "Value one",
+      "subtitle": "Short subtitle",
+      "desc": "Explain your first core value in one or two sentences."
+    },
+    {
+      "title": "Value two",
+      "subtitle": "Short subtitle",
+      "desc": "Explain your second core value in one or two sentences."
+    },
+    {
+      "title": "Value three",
+      "subtitle": "Short subtitle",
+      "desc": "Explain your third core value in one or two sentences."
+    }
+  ],
+  "doctorImage": "/assets/images/about.jpg",
+  "doctorImageAlt": "Your team or business photo"
+}

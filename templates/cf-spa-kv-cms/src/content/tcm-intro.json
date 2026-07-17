@@ -1,0 +1,28 @@
+{
+  "sectionTitle": "Introduction",
+  "sectionSubtitle": "A short heading for your article or introduction section.",
+  "contentTitle": "Your article title",
+  "content": "Replace this with your own article or introduction content. Explain what you do, why it matters, and how it helps your customers. Keep paragraphs concise and easy to scan.",
+  "highlights": [
+    {
+      "icon": "Heart",
+      "title": "Highlight one",
+      "desc": "Short description of your first highlight."
+    },
+    {
+      "icon": "BookOpen",
+      "title": "Highlight two",
+      "desc": "Short description of your second highlight."
+    },
+    {
+      "icon": "Heart",
+      "title": "Highlight three",
+      "desc": "Short description of your third highlight."
+    },
+    {
+      "icon": "BookOpen",
+      "title": "Highlight four",
+      "desc": "Short description of your fourth highlight."
+    }
+  ]
+}

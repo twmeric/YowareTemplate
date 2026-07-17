@@ -1,0 +1,19 @@
+{
+  "heading": "Your hero headline",
+  "subheading": "Your hero subheading",
+  "tagline": "Your hero tagline — keep it short and memorable",
+  "primaryCta": {
+    "text": "Book via WhatsApp",
+    "message": "Hello, I would like to make an appointment"
+  },
+  "secondaryCta": {
+    "text": "Learn more",
+    "href": "#about"
+  },
+  "trustBadges": [
+    { "icon": "Shield", "text": "Your trust badge 1" },
+    { "icon": "Clock", "text": "Your trust badge 2" },
+    { "icon": "GraduationCap", "text": "Your trust badge 3" }
+  ],
+  "backgroundImage": "/assets/images/hero.jpg"
+}

@@ -6,6 +6,7 @@ compatibility_date = "2024-01-01"
 binding = "DB"
 database_name = "yowaretemplate-platform-db"
 database_id = "931be9df-48fe-43ef-8270-dda773b8f573"
+migrations_dir = "migrations"
 
 [vars]
 PLATFORM_ORIGIN = "https://yowaretemplate.pages.dev"

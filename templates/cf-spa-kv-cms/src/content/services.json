@@ -1,0 +1,46 @@
+{
+  "sectionTitle": "Our services",
+  "sectionSubtitle": "A short introduction to what you offer.",
+  "services": [
+    {
+      "icon": "Leaf",
+      "title": "Service one",
+      "subtitle": "Short subtitle for service one",
+      "desc": "Describe service one in a few sentences. Mention the benefit to the customer.",
+      "image": "/assets/images/service-1.jpg",
+      "imageAlt": "Service one image"
+    },
+    {
+      "icon": "Zap",
+      "title": "Service two",
+      "subtitle": "Short subtitle for service two",
+      "desc": "Describe service two in a few sentences. Mention the benefit to the customer.",
+      "image": "/assets/images/service-2.jpg",
+      "imageAlt": "Service two image"
+    },
+    {
+      "icon": "Brain",
+      "title": "Service three",
+      "subtitle": "Short subtitle for service three",
+      "desc": "Describe service three in a few sentences. Mention the benefit to the customer.",
+      "image": "/assets/images/service-3.jpg",
+      "imageAlt": "Service three image"
+    },
+    {
+      "icon": "Heart",
+      "title": "Service four",
+      "subtitle": "Short subtitle for service four",
+      "desc": "Describe service four in a few sentences. Mention the benefit to the customer.",
+      "image": "/assets/images/service-4.jpg",
+      "imageAlt": "Service four image"
+    }
+  ],
+  "processTitle": "How it works",
+  "processSubtitle": "Simple steps to get started",
+  "processSteps": [
+    { "icon": "ClipboardList", "step": "01", "title": "Book", "desc": "Make an appointment through WhatsApp or phone" },
+    { "icon": "Stethoscope", "step": "02", "title": "Consult", "desc": "We understand your needs in detail" },
+    { "icon": "FileText", "step": "03", "title": "Plan", "desc": "We propose a tailored solution" },
+    { "icon": "RotateCcw", "step": "04", "title": "Follow up", "desc": "We keep in touch and adjust as needed" }
+  ]
+}

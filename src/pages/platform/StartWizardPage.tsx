@@ -71,6 +71,7 @@ const StartWizardPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
 
   // WhatsApp verification state
   const [verifyCode, setVerifyCode] = useState<string | null>(null);
@@ -317,17 +318,32 @@ const StartWizardPage: React.FC = () => {
     return lines.join("\n");
   };
 
+  const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} 逾時，請重試`)), ms)
+      ),
+    ]);
+  };
+
   const handleSubmit = async () => {
     if (!validateStep() || !slug || !template) return;
-    if (data.honeypot) return;
 
     setSubmitting(true);
     setSubmitError(null);
+    setSubmitStatus("AI 正在生成您的網站，約需 10-30 秒...");
 
     try {
-      // 1. Generate content with AI
+      // 1. Generate content with AI (with timeout)
       const brief = buildBrief();
-      const generated = await generateContent(brief);
+      const generated = await withTimeout(
+        generateContent(brief),
+        45000,
+        "AI 生成"
+      );
+
+      setSubmitStatus("正在建立訂單...");
 
       // 2. Save generated content for preview
       localStorage.setItem(
@@ -336,19 +352,22 @@ const StartWizardPage: React.FC = () => {
       );
 
       // 3. Create order
-      const result = await createOrder({
-        templateSlug: slug,
-        customer: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          whatsapp: data.whatsapp,
-          preferredContact: data.preferredContact,
-        },
-        answers: data.answers,
-        generatedContent: generated.content as Record<string, unknown>,
-        honeypot: data.honeypot,
-      });
+      const result = await withTimeout(
+        createOrder({
+          templateSlug: slug,
+          customer: {
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            whatsapp: data.whatsapp,
+            preferredContact: data.preferredContact,
+          },
+          answers: data.answers,
+          generatedContent: generated.content as Record<string, unknown>,
+        }),
+        15000,
+        "建立訂單"
+      );
 
       // 4. Clear wizard draft
       if (slug) {
@@ -365,6 +384,7 @@ const StartWizardPage: React.FC = () => {
       );
     } finally {
       setSubmitting(false);
+      setSubmitStatus(null);
     }
   };
 
@@ -477,16 +497,6 @@ const StartWizardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Honeypot */}
-      <div className="hidden" aria-hidden="true">
-        <input
-          type="text"
-          value={data.honeypot}
-          onChange={(e) => updateData({ honeypot: e.target.value })}
-          tabIndex={-1}
-          autoComplete="off"
-        />
-      </div>
     </div>
   );
 
@@ -766,12 +776,25 @@ const StartWizardPage: React.FC = () => {
 
                 {renderStepContent()}
 
+                {submitStatus && !submitError && (
+                  <div className="mt-6 p-4 bg-jkd-gold/10 text-jkd-gold rounded-lg flex items-start gap-2">
+                    <Loader2 className="w-5 h-5 shrink-0 mt-0.5 animate-spin" />
+                    <div>
+                      <p className="font-bold">處理中</p>
+                      <p className="text-sm">{submitStatus}</p>
+                    </div>
+                  </div>
+                )}
+
                 {submitError && (
                   <div className="mt-6 p-4 bg-red-500/10 text-red-400 rounded-lg flex items-start gap-2">
                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold">提交失敗</p>
                       <p className="text-sm">{submitError}</p>
+                      <p className="text-xs mt-1 opacity-80">
+                        請檢查網路連線後再次點擊「確認送出」。若持續失敗，請透過 WhatsApp 聯絡我們。
+                      </p>
                     </div>
                   </div>
                 )}
