@@ -102,6 +102,24 @@ async function verifySignature(request: Request, secret: string): Promise<boolea
   return signature === digest;
 }
 
+function utf8ToBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToUtf8(str: string): string {
+  const binary = atob(str);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 async function fetchGitHubFile(
   owner: string,
   repo: string,
@@ -127,7 +145,7 @@ async function fetchGitHubFile(
 
   const data = (await res.json()) as { content: string; sha?: string; encoding: string };
   return {
-    content: atob(data.content.replace(/\n/g, "")),
+    content: base64ToUtf8(data.content.replace(/\n/g, "")),
     sha: data.sha,
   };
 }
@@ -143,7 +161,7 @@ async function commitGitHubFile(
 ): Promise<void> {
   const body: Record<string, string> = {
     message,
-    content: btoa(content),
+    content: utf8ToBase64(content),
   };
   if (existingSha) body.sha = existingSha;
 
@@ -263,8 +281,66 @@ async function replaceSearchImages(content: RawSiteContent, pixabayKey?: string)
   return c;
 }
 
+interface WebhookPayload {
+  repository?: { full_name?: string; name?: string; owner?: { login?: string } };
+  ref?: string;
+  commits?: Array<{ modified?: string[]; added?: string[]; removed?: string[] }>;
+}
+
+async function processWebhook(owner: string, repo: string, env: Env): Promise<void> {
+  try {
+    // Fetch brief.txt.
+    const briefFile = await fetchGitHubFile(owner, repo, "brief.txt", env.GITHUB_TOKEN);
+    const brief = briefFile.content;
+
+    // Generate content via DeepSeek.
+    const raw = await callDeepSeek(env.DEEPSEEK_API_KEY, brief);
+    const cleaned = stripMarkdownCodeBlocks(raw);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      console.error("JSON parse error:", e instanceof Error ? e.message : "unknown");
+      console.error("Raw output:", raw);
+      return;
+    }
+
+    if (!validateStructure(parsed)) {
+      console.error("Generated JSON failed structure validation:", JSON.stringify(parsed, null, 2));
+      return;
+    }
+
+    // Resolve images.
+    const withImages = await replaceSearchImages(parsed, env.PIXABAY_API_KEY);
+
+    // Commit to public/data/content.json.
+    let existingSha: string | undefined;
+    try {
+      const existing = await fetchGitHubFile(owner, repo, "public/data/content.json", env.GITHUB_TOKEN);
+      existingSha = existing.sha;
+    } catch {
+      existingSha = undefined;
+    }
+
+    await commitGitHubFile(
+      owner,
+      repo,
+      "public/data/content.json",
+      JSON.stringify(withImages, null, 2),
+      "feat: auto-generate site content from brief.txt via AI",
+      env.GITHUB_TOKEN,
+      existingSha
+    );
+
+    console.log(`Successfully generated content for ${owner}/${repo}`);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : "unknown error";
+    console.error("Webhook processing error:", errorMsg);
+  }
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -288,11 +364,7 @@ export default {
         }
       }
 
-      const payload = (await request.json()) as {
-        repository?: { full_name?: string; name?: string; owner?: { login?: string } };
-        ref?: string;
-        commits?: Array<{ modified?: string[]; added?: string[]; removed?: string[] }>;
-      };
+      const payload = (await request.json()) as WebhookPayload;
 
       const fullName = payload.repository?.full_name;
       if (!fullName) {
@@ -314,56 +386,13 @@ export default {
         return new Response("brief.txt not changed; ignored", { status: 200 });
       }
 
-      // Fetch brief.txt.
-      const briefFile = await fetchGitHubFile(owner, repo, "brief.txt", env.GITHUB_TOKEN);
-      const brief = briefFile.content;
-
-      // Generate content via DeepSeek.
-      const raw = await callDeepSeek(env.DEEPSEEK_API_KEY, brief);
-      const cleaned = stripMarkdownCodeBlocks(raw);
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch (e) {
-        return new Response(
-          `JSON parse error: ${e instanceof Error ? e.message : "unknown"}\n\nRaw output:\n${raw}`,
-          { status: 502 }
-        );
-      }
-
-      if (!validateStructure(parsed)) {
-        return new Response(
-          `Generated JSON failed structure validation.\n\nJSON:\n${JSON.stringify(parsed, null, 2)}`,
-          { status: 502 }
-        );
-      }
-
-      // Resolve images.
-      const withImages = await replaceSearchImages(parsed, env.PIXABAY_API_KEY);
-
-      // Commit to public/data/content.json.
-      let existingSha: string | undefined;
-      try {
-        const existing = await fetchGitHubFile(owner, repo, "public/data/content.json", env.GITHUB_TOKEN);
-        existingSha = existing.sha;
-      } catch {
-        existingSha = undefined;
-      }
-
-      await commitGitHubFile(
-        owner,
-        repo,
-        "public/data/content.json",
-        JSON.stringify(withImages, null, 2),
-        "feat: auto-generate site content from brief.txt via AI",
-        env.GITHUB_TOKEN,
-        existingSha
-      );
+      // Process asynchronously so GitHub doesn't timeout waiting for DeepSeek.
+      ctx.waitUntil(processWebhook(owner, repo, env));
 
       return new Response(
-        JSON.stringify({ success: true, repo: fullName }),
+        JSON.stringify({ success: true, message: "Processing started", repo: fullName }),
         {
-          status: 200,
+          status: 202,
           headers: { "Content-Type": "application/json" },
         }
       );
