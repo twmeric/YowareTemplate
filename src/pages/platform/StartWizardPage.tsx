@@ -276,7 +276,7 @@ const StartWizardPage: React.FC = () => {
             type="text"
             value={data.name}
             onChange={(e) => updateData({ name: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="例如：王小明"
           />
           {fieldErrors.name && (
@@ -294,7 +294,7 @@ const StartWizardPage: React.FC = () => {
             type="email"
             value={data.email}
             onChange={(e) => updateData({ email: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="ming@example.com"
           />
           {fieldErrors.email && (
@@ -312,7 +312,7 @@ const StartWizardPage: React.FC = () => {
             type="tel"
             value={data.phone}
             onChange={(e) => updateData({ phone: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="+852 9876 5432"
           />
           {fieldErrors.phone && (
@@ -330,7 +330,7 @@ const StartWizardPage: React.FC = () => {
             type="tel"
             value={data.whatsapp}
             onChange={(e) => updateData({ whatsapp: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="85298765432"
           />
           {fieldErrors.whatsapp && (
@@ -349,7 +349,7 @@ const StartWizardPage: React.FC = () => {
             onChange={(e) =>
               updateData({ preferredContact: e.target.value as PreferredContact })
             }
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800 text-jkd-white"
           >
             <option value="email">電子郵件</option>
             <option value="phone">電話</option>
@@ -392,14 +392,14 @@ const StartWizardPage: React.FC = () => {
             type="text"
             value={data.answers[name] || ""}
             onChange={(e) => updateAnswer(name, e.target.value)}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="例如：餐飲、零售、服務"
           />
         ) : name === "language" ? (
           <select
             value={data.answers[name] || ""}
             onChange={(e) => updateAnswer(name, e.target.value)}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800 text-jkd-white"
           >
             <option value="">請選擇</option>
             <option value="繁體中文">繁體中文</option>
@@ -411,7 +411,7 @@ const StartWizardPage: React.FC = () => {
           <textarea
             value={data.answers[name] || ""}
             onChange={(e) => updateAnswer(name, e.target.value)}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold h-28"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold h-28"
             placeholder={`請輸入${meta.label}`}
           />
         )}
@@ -426,7 +426,7 @@ const StartWizardPage: React.FC = () => {
 
   const renderReviewStep = () => (
     <div className="space-y-6">
-      <div className="bg-jkd-black-800 rounded-xl p-6">
+      <div className="bg-jkd-black-800 text-jkd-white rounded-xl p-6">
         <h3 className="text-lg font-bold text-jkd-gold mb-4">聯絡資料</h3>
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
@@ -459,7 +459,7 @@ const StartWizardPage: React.FC = () => {
       </div>
 
       {visibleStep2Fields.length > 0 && (
-        <div className="bg-jkd-black-800 rounded-xl p-6">
+        <div className="bg-jkd-black-800 text-jkd-white rounded-xl p-6">
           <h3 className="text-lg font-bold text-jkd-gold mb-4">品牌資訊</h3>
           <dl className="space-y-3 text-sm">
             {visibleStep2Fields.map((name) => {
@@ -478,7 +478,7 @@ const StartWizardPage: React.FC = () => {
       )}
 
       {visibleStep3Fields.length > 0 && (
-        <div className="bg-jkd-black-800 rounded-xl p-6">
+        <div className="bg-jkd-black-800 text-jkd-white rounded-xl p-6">
           <h3 className="text-lg font-bold text-jkd-gold mb-4">業務內容</h3>
           <dl className="space-y-3 text-sm">
             {visibleStep3Fields.map((name) => {
@@ -611,7 +611,7 @@ const StartWizardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-jkd-black-800 rounded-2xl shadow-sm border border-jkd-gray-400/20 p-6 md:p-10">
+              <div className="bg-jkd-black-800 text-jkd-white rounded-2xl shadow-sm border border-jkd-gray-400/20 p-6 md:p-10">
                 <h2 className="text-xl font-bold text-jkd-gold mb-6">
                   {stepTitles[step - 1]}
                 </h2>
@@ -633,7 +633,7 @@ const StartWizardPage: React.FC = () => {
                     <button
                       onClick={handleBack}
                       disabled={submitting}
-                      className="px-6 py-3 border border-gray-300 text-jkd-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="px-6 py-3 border border-jkd-gray-400 text-jkd-gray-200 rounded-lg font-medium hover:bg-jkd-gray-400/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <ArrowLeft className="w-4 h-4" /> 上一步
                     </button>
@@ -652,7 +652,7 @@ const StartWizardPage: React.FC = () => {
                     <button
                       onClick={handleSubmit}
                       disabled={submitting}
-                      className="px-6 py-3 bg-brand-red text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                      className="px-6 py-3 bg-jkd-gold text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
                     >
                       {submitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
