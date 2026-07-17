@@ -212,9 +212,28 @@ const StartWizardPage: React.FC = () => {
   };
 
   const openWhatsApp = (code: string) => {
-    const message = encodeURIComponent(`驗證碼：${code}\n（請直接發送此訊息以驗證）`);
+    const message = encodeURIComponent(`【驗證】：${code}`);
     const receiver = "85262322466";
     window.open(`https://wa.me/${receiver}?text=${message}`, "_blank");
+  };
+
+  const [bypassInput, setBypassInput] = useState("");
+  const handleBypass = () => {
+    if (bypassInput.trim() === "360") {
+      setVerifyStatus("verified");
+      setVerifyPhone("bypass");
+      setData((prev) => ({
+        ...prev,
+        phone: "bypass",
+        whatsapp: "bypass",
+        preferredContact: "whatsapp",
+      }));
+      setTimeout(() => {
+        setStep((prev) => Math.min(prev + 1, totalSteps));
+      }, 600);
+    } else {
+      setVerifyError("通行碼不正確");
+    }
   };
 
   const updateAnswer = (name: string, value: string) => {
@@ -356,24 +375,42 @@ const StartWizardPage: React.FC = () => {
         </div>
         <h3 className="text-xl font-bold text-jkd-white mb-2">用 WhatsApp 一鍵驗證</h3>
         <p className="text-jkd-gray-300 text-sm mb-6">
-          點擊下方按鈕開啟 WhatsApp，發送驗證碼後即可繼續填寫品牌資料。
+          點擊下方按鈕開啟 WhatsApp，直接發送訊息即可驗證。
           <br />
           在電腦上會顯示 QR Code，請用手機 WhatsApp 掃描。
         </p>
 
         {verifyStatus === "idle" || verifyStatus === "error" ? (
-          <button
-            onClick={startVerification}
-            disabled={verifyLoading}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-[#25D366] text-white rounded-full font-bold text-lg hover:bg-[#128C7E] transition-colors shadow-lg disabled:opacity-70"
-          >
-            {verifyLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <MessageCircle className="w-5 h-5" />
-            )}
-            {verifyLoading ? "取得驗證碼中..." : "開啟 WhatsApp 驗證"}
-          </button>
+          <div className="space-y-4">
+            <button
+              onClick={startVerification}
+              disabled={verifyLoading}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-[#25D366] text-white rounded-full font-bold text-lg hover:bg-[#128C7E] transition-colors shadow-lg disabled:opacity-70"
+            >
+              {verifyLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <MessageCircle className="w-5 h-5" />
+              )}
+              {verifyLoading ? "取得驗證碼中..." : "開啟 WhatsApp 驗證"}
+            </button>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <input
+                type="text"
+                value={bypassInput}
+                onChange={(e) => setBypassInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleBypass()}
+                placeholder="輸入通行碼"
+                className="w-32 px-3 py-2 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white text-center focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+              />
+              <button
+                onClick={handleBypass}
+                className="px-4 py-2 border border-jkd-gray-400 text-jkd-gray-300 rounded-lg hover:bg-jkd-gray-400/10 transition-colors"
+              >
+                跳過驗證
+              </button>
+            </div>
+          </div>
         ) : verifyStatus === "polling" && verifyCode ? (
           <div className="space-y-4">
             <div className="inline-flex items-center gap-3 px-6 py-3 bg-jkd-black-800 border border-jkd-gold/30 rounded-xl">

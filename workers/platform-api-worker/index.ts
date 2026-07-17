@@ -79,7 +79,7 @@ function corsHeaders(request: Request, origin: string | null): Record<string, st
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Vary": "Origin",
     "Cache-Control": "no-store, must-revalidate, max-age=0",
   };
