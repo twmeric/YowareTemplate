@@ -12,36 +12,11 @@
 
 ---
 
-## 步驟 1：建立 OAuth Gateway（共用，只需一次）
-
-### 1.1 註冊 GitHub OAuth App
-
-1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
-2. Application name：`JKD CMS Gateway`
-3. Homepage URL：`https://你的公司網站.com`（暫時可填占位）
-4. Authorization callback URL：`https://jkd-oauth-gateway.你的子網域.workers.dev/callback`
-5. 記下 **Client ID** 與 **Client Secret**
-
-### 1.2 部署 OAuth Worker
-
-```bash
-cd workers/oauth-gateway
-npx wrangler deploy
-wrangler secret put GITHUB_CLIENT_ID
-wrangler secret put GITHUB_CLIENT_SECRET
-```
-
-### 1.3 驗證
-
-訪問 `https://jkd-oauth-gateway.你的子網域.workers.dev/`，應看到 JSON 回傳 `{ "ok": true, ... }`。
-
----
-
-## 步驟 2：部署 AI Content Worker（共用，只需一次）
+## 步驟 1：部署 AI Content Worker（共用，只需一次）
 
 ```bash
 cd workers/ai-content-worker
-npx wrangler deploy
+pnpm exec wrangler deploy
 wrangler secret put DEEPSEEK_API_KEY
 wrangler secret put GITHUB_TOKEN
 wrangler secret put PIXABAY_API_KEY        # 可選
@@ -49,6 +24,39 @@ wrangler secret put GITHUB_WEBHOOK_SECRET  # 可選，但建議
 ```
 
 記下 Worker 網址：`https://jkd-ai-content-worker.你的子網域.workers.dev`
+
+---
+
+## 步驟 2：部署 Admin API Worker（共用，只需一次）
+
+這個 Worker 提供自訂後台 UI 的 API，讓客戶不用 GitHub 就能編輯網站內容。
+
+```bash
+cd workers/admin-api-worker
+pnpm exec wrangler deploy
+wrangler secret put ADMIN_PASSWORD         # 建議隨機 16 碼以上
+wrangler secret put ADMIN_TOKEN_SECRET     # 建議隨機 32 碼以上
+wrangler secret put GITHUB_TOKEN           # 與 AI Worker 相同，需 repo scope
+```
+
+Worker 會自動從 `wrangler.toml` 讀取 `GITHUB_REPO`。
+
+記下 Worker 網址：`https://jkd-admin-api-worker.你的子網域.workers.dev`
+
+### 產生自動登入連結
+
+登入後台有兩種方式：
+
+1. **密碼登入**：直接訪問 `https://<客戶網域>/admin`，輸入 `ADMIN_PASSWORD`。
+2. **自動登入連結**：呼叫 Worker 產生一次性 token URL，適合寄給客戶：
+
+```bash
+curl -X POST https://jkd-admin-api-worker.你的子網域.workers.dev/api/generate-token \
+  -H "Content-Type: application/json" \
+  -d '{"password":"你的ADMIN_PASSWORD","expiresInHours":168}'
+```
+
+回傳包含 `url`，客戶開啟後會自動登入。
 
 ---
 
@@ -62,14 +70,10 @@ wrangler secret put GITHUB_WEBHOOK_SECRET  # 可選，但建議
 
 ### 3.2 修改設定檔
 
-編輯 `public/admin/config.yml`：
+編輯 `src/api/admin.ts`，將 `ADMIN_API_URL` 改為你的 Admin API Worker 網址：
 
-```yaml
-backend:
-  repo: 你的帳號/client-bakery-v1
-  base_url: https://jkd-oauth-gateway.你的子網域.workers.dev
-
-site_url: https://client-bakery-v1.pages.dev
+```ts
+const ADMIN_API_URL = "https://jkd-admin-api-worker.你的子網域.workers.dev";
 ```
 
 ### 3.3 填寫 brief.txt
@@ -109,7 +113,7 @@ git push
 ## 步驟 4：驗證
 
 - 訪問客戶網站，確認內容正確渲染
-- 訪問 `/admin/`，測試 Decap CMS 授權與修改內容
+- 訪問 `https://<客戶網域>/admin`，使用 `ADMIN_PASSWORD` 登入，測試修改內容並儲存
 - 檢查 AI Worker 執行記錄（Wrangler Logs / Cloudflare Dashboard）
 
 ---
@@ -128,8 +132,8 @@ git push
 - 確認已設定 `PIXABAY_API_KEY`
 - 若未設定 Pixabay key，Worker 會使用 fallback 圖片
 
-### Q：OAuth 授權失敗？
+### Q：後台儲存失敗？
 
-- 確認 OAuth App 的 callback URL 與 Worker 網址一致
-- 確認 `GITHUB_CLIENT_ID` 與 `GITHUB_CLIENT_SECRET` 正確
-- 確認 Worker 有回應 CORS `OPTIONS` 預檢請求
+- 確認 Admin API Worker 的 `GITHUB_TOKEN` 有該客戶倉庫的 `repo` 權限
+- 確認 `src/api/admin.ts` 中的 `ADMIN_API_URL` 正確
+- 確認瀏覽器開發者工具中的 Network 請求沒有 CORS 錯誤

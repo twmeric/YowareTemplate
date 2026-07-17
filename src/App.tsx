@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Menu, X, Facebook, Instagram, Youtube, MessageCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import ProductCard from './components/ProductCard';
 import { useContent } from './hooks/useContent';
+import Admin from './pages/Admin';
 import type { Product, SocialLink } from './types/content';
+
+const isAdminRoute = window.location.pathname.startsWith('/admin');
 
 const socialIconMap: Record<string, React.ReactNode> = {
   facebook: <Facebook className="w-6 h-6" />,
@@ -10,7 +13,7 @@ const socialIconMap: Record<string, React.ReactNode> = {
   youtube: <Youtube className="w-6 h-6" />,
 };
 
-const App: React.FC = () => {
+const LandingApp: React.FC = () => {
   const { content, loading, error } = useContent();
   const [cart, setCart] = useState<Product[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,6 +26,12 @@ const App: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (content?.brand?.name) {
+      document.title = content.brand.name;
+    }
+  }, [content]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -284,6 +293,13 @@ const App: React.FC = () => {
       </footer>
     </div>
   );
+};
+
+const App: React.FC = () => {
+  if (isAdminRoute) {
+    return <Admin />;
+  }
+  return <LandingApp />;
 };
 
 export default App;

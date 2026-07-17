@@ -1,5 +1,7 @@
-# Decap CMS SPA fallback
-/admin/*  /admin/index.html  200
+# Custom Admin UI SPA fallback
+/admin              /index.html  200
+/admin/index.html   /index.html  200
+/admin/*            /index.html  200
 
 # React app catch-all
-/*        /index.html        200
+/*                  /index.html  200

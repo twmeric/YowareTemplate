@@ -31,20 +31,26 @@ pnpm run build
 
 ## 內容架構
 
-所有客戶內容都在 `public/data/content.json`，由 AI Worker 或 Decap CMS 維護。
+所有客戶內容都在 `public/data/content.json`，由 AI Worker 或自訂後台 UI 維護。
 React 應用在執行期載入此 JSON，再動態渲染頁面。
 
 內容類型定義：`src/types/content.ts`
 內容載入 Hook：`src/hooks/useContent.ts`
+後台 API：`src/api/admin.ts`
+後台頁面：`src/pages/Admin.tsx`
 
-## Decap CMS 後台
+## 自訂後台 UI
 
-部署後訪問 `https://<your-domain>/admin/`，使用 GitHub 授權登入。
+部署後訪問 `https://<your-domain>/admin`，使用 Admin API Worker 設定的密碼登入。
 
-使用前請先修改 `public/admin/config.yml` 中的：
-- `backend.repo`：改為 `你的帳號/倉庫名稱`
-- `backend.base_url`：改為你的 OAuth Gateway Worker 網址
-- `site_url`：改為你的 Cloudflare Pages 網址
+設定方式：
+
+1. 部署 `workers/admin-api-worker`
+2. 設定 secrets：`ADMIN_PASSWORD`、`ADMIN_TOKEN_SECRET`、`GITHUB_TOKEN`
+3. 編輯 `src/api/admin.ts` 中的 `ADMIN_API_URL` 為你的 Worker 網址
+4. 重新部署網站
+
+也可以呼叫 `/api/generate-token` 產生自動登入連結給客戶。
 
 ## AI 自動生成
 
@@ -60,19 +66,21 @@ brief.txt → DeepSeek AI → Pixabay 圖片 → public/data/content.json → Cl
 
 ```
 public/
-  admin/            Decap CMS 入口與設定
   assets/images/    客戶上傳的圖片
-  data/content.json 網站內容（由 AI / CMS 維護）
+  data/content.json 網站內容（由 AI / 後台維護）
   _redirects        Cloudflare Pages SPA fallback
   _headers          安全標頭
 src/
+  api/              後台 API 客戶端
   components/       React 組件
   hooks/            內容載入 Hook
+  pages/            頁面（含後台 Admin）
   types/            TypeScript 內容型別
   App.tsx           單頁應用入口
 workers/
+  admin-api-worker/    自訂後台 API（所有站共用）
   ai-content-worker/   DeepSeek + Pixabay 內容生成 Worker
-  oauth-gateway/       GitHub OAuth Gateway（所有站共用）
+  oauth-gateway/       GitHub OAuth Gateway（legacy，已改用自訂後台）
 ```
 
 ## 授權

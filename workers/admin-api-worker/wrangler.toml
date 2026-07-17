@@ -1,0 +1,11 @@
+name = "jkd-admin-api-worker"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+GITHUB_REPO = "twmeric/YowareTemplate"
+
+# Create secrets with:
+#   wrangler secret put ADMIN_PASSWORD
+#   wrangler secret put ADMIN_TOKEN_SECRET
+#   wrangler secret put GITHUB_TOKEN
