@@ -92,6 +92,21 @@ export function setToken(token: string): void {
   localStorage.setItem("jkd_admin_token", token);
 }
 
+export function getTokenRole(): "admin" | "demo" | null {
+  const token = localStorage.getItem("jkd_admin_token");
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1])) as { role?: string };
+    return payload.role === "admin" || payload.role === "demo" ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isDemo(): boolean {
+  return getTokenRole() === "demo";
+}
+
 export async function loadContent(): Promise<SiteContent> {
   const data = (await request("/api/content")) as { content: SiteContent };
   return data.content;

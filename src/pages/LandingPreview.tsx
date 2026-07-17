@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   ShoppingCart,
   Menu,
@@ -9,10 +10,11 @@ import {
   MessageCircle,
   ArrowRight,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useContent } from "../hooks/useContent";
-import type { Product, SocialLink } from "../types/content";
+import type { Product, SocialLink, SiteContent } from "../types/content";
 
 const socialIconMap: Record<string, React.ReactNode> = {
   facebook: <Facebook className="w-6 h-6" />,
@@ -21,7 +23,37 @@ const socialIconMap: Record<string, React.ReactNode> = {
 };
 
 const LandingPreview: React.FC = () => {
-  const { content, loading, error } = useContent();
+  const [searchParams] = useSearchParams();
+  const isGenerated = searchParams.get("mode") === "generated";
+  const publicId = searchParams.get("publicId");
+
+  const fetched = useContent();
+  const [generatedContent, setGeneratedContent] = useState<SiteContent | null>(null);
+  const [generatedLoading, setGeneratedLoading] = useState(isGenerated);
+  const [generatedError, setGeneratedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isGenerated) return;
+
+    try {
+      const raw = localStorage.getItem("yoware_generated_content");
+      if (raw) {
+        const parsed = JSON.parse(raw) as SiteContent;
+        setGeneratedContent(parsed);
+      } else {
+        setGeneratedError("找不到 AI 生成的內容，請重新提交表單。");
+      }
+    } catch (err) {
+      setGeneratedError("讀取生成內容時發生錯誤。");
+    } finally {
+      setGeneratedLoading(false);
+    }
+  }, [isGenerated]);
+
+  const content = isGenerated && generatedContent ? generatedContent : fetched.content;
+  const loading = isGenerated ? generatedLoading : fetched.loading;
+  const error = isGenerated ? generatedError : fetched.error;
+
   const [cart, setCart] = useState<Product[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -36,9 +68,11 @@ const LandingPreview: React.FC = () => {
 
   useEffect(() => {
     if (content?.brand?.name) {
-      document.title = content.brand.name;
+      document.title = isGenerated
+        ? `${content.brand.name} - AI 生成預覽`
+        : content.brand.name;
     }
-  }, [content]);
+  }, [content, isGenerated]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -72,9 +106,29 @@ const LandingPreview: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans selection:bg-brand-green selection:text-white">
+      {isGenerated && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-brand-green text-white px-4 py-3">
+          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span>
+                這是 AI 根據你提供的資料生成的預覽頁面
+                {publicId ? `（訂單編號：${publicId}）` : ""}
+              </span>
+            </div>
+            <Link
+              to="/templates"
+              className="inline-flex items-center gap-1 underline hover:text-brand-red transition-colors"
+            >
+              回到模板列表 <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed ${isGenerated ? "top-10" : "top-0"} left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"
         }`}
       >
@@ -154,7 +208,7 @@ const LandingPreview: React.FC = () => {
         {/* Hero Section */}
         <section
           id="hero"
-          className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden"
+          className={`relative ${isGenerated ? "pt-40" : "pt-32"} pb-20 md:pt-48 md:pb-32 overflow-hidden`}
         >
           <div className="container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 text-center md:text-left z-10">

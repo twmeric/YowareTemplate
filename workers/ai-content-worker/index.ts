@@ -78,6 +78,39 @@ interface RawSiteContent {
 
 import { SYSTEM_PROMPT } from "./prompt";
 
+const ALLOWED_ORIGINS = [
+  "https://yowaretemplate.pages.dev",
+  "http://localhost:5173",
+  "http://localhost:8787",
+];
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Hub-Signature-256",
+};
+
+function getAllowedOrigin(request: Request): string | null {
+  const origin = request.headers.get("Origin");
+  if (!origin) return null;
+  return ALLOWED_ORIGINS.includes(origin) ? origin : null;
+}
+
+function jsonResponse(data: unknown, request: Request, status = 200): Response {
+  const origin = getAllowedOrigin(request);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json; charset=utf-8",
+    ...CORS_HEADERS,
+    "Access-Control-Allow-Origin": origin ?? "*",
+    "Vary": "Origin",
+  };
+  return new Response(JSON.stringify(data), { status, headers });
+}
+
+function errorResponse(message: string, request: Request, status = 400): Response {
+  return jsonResponse({ success: false, error: message }, request, status);
+}
+
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1547986280-fdcf1b207d27?q=80&w=1000&auto=format&fit=crop";
 
@@ -287,31 +320,36 @@ interface WebhookPayload {
   commits?: Array<{ modified?: string[]; added?: string[]; removed?: string[] }>;
 }
 
+async function generateSiteContent(brief: string, env: Env): Promise<RawSiteContent> {
+  // Generate content via DeepSeek.
+  const raw = await callDeepSeek(env.DEEPSEEK_API_KEY, brief);
+  const cleaned = stripMarkdownCodeBlocks(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    console.error("JSON parse error:", e instanceof Error ? e.message : "unknown");
+    console.error("Raw output:", raw);
+    throw new Error("Failed to parse AI response as JSON");
+  }
+
+  if (!validateStructure(parsed)) {
+    console.error("Generated JSON failed structure validation:", JSON.stringify(parsed, null, 2));
+    throw new Error("Generated content failed structure validation");
+  }
+
+  // Resolve images.
+  const withImages = await replaceSearchImages(parsed, env.PIXABAY_API_KEY);
+  return withImages;
+}
+
 async function processWebhook(owner: string, repo: string, env: Env): Promise<void> {
   try {
     // Fetch brief.txt.
     const briefFile = await fetchGitHubFile(owner, repo, "brief.txt", env.GITHUB_TOKEN);
     const brief = briefFile.content;
 
-    // Generate content via DeepSeek.
-    const raw = await callDeepSeek(env.DEEPSEEK_API_KEY, brief);
-    const cleaned = stripMarkdownCodeBlocks(raw);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch (e) {
-      console.error("JSON parse error:", e instanceof Error ? e.message : "unknown");
-      console.error("Raw output:", raw);
-      return;
-    }
-
-    if (!validateStructure(parsed)) {
-      console.error("Generated JSON failed structure validation:", JSON.stringify(parsed, null, 2));
-      return;
-    }
-
-    // Resolve images.
-    const withImages = await replaceSearchImages(parsed, env.PIXABAY_API_KEY);
+    const withImages = await generateSiteContent(brief, env);
 
     // Commit to public/data/content.json.
     let existingSha: string | undefined;
@@ -342,16 +380,37 @@ async function processWebhook(owner: string, repo: string, env: Env): Promise<vo
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method === "OPTIONS") {
+      const origin = getAllowedOrigin(request);
       return new Response(null, {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-Hub-Signature-256",
+          ...CORS_HEADERS,
+          "Access-Control-Allow-Origin": origin ?? "*",
+          "Vary": "Origin",
         },
       });
     }
 
+    const url = new URL(request.url);
+
+    // Direct generation endpoint for the platform UI.
+    if (url.pathname === "/api/generate" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { brief?: string };
+        if (!body.brief || typeof body.brief !== "string" || body.brief.trim().length === 0) {
+          return errorResponse("Missing or invalid brief", request, 400);
+        }
+
+        const content = await generateSiteContent(body.brief, env);
+        return jsonResponse({ success: true, data: { content } }, request, 200);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "unknown error";
+        console.error("Direct generation error:", message);
+        return errorResponse(message, request, 500);
+      }
+    }
+
+    // Legacy GitHub webhook endpoint.
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
@@ -389,19 +448,14 @@ export default {
       // Process asynchronously so GitHub doesn't timeout waiting for DeepSeek.
       ctx.waitUntil(processWebhook(owner, repo, env));
 
-      return new Response(
-        JSON.stringify({ success: true, message: "Processing started", repo: fullName }),
-        {
-          status: 202,
-          headers: { "Content-Type": "application/json" },
-        }
+      return jsonResponse(
+        { success: true, message: "Processing started", repo: fullName },
+        request,
+        202
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "unknown error";
-      return new Response(JSON.stringify({ success: false, error: message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponse(message, request, 500);
     }
   },
 };

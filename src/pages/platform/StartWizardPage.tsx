@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import PlatformLayout from "./PlatformLayout";
 import { getTemplate, createOrder, type TemplateDetail } from "../../api/platform";
+import { generateContent } from "../../api/ai";
 
 type PreferredContact = "email" | "phone" | "whatsapp";
 
@@ -35,7 +36,13 @@ const DEFAULT_DATA: WizardData = {
 
 const STORAGE_KEY = (slug: string) => `yoware_wizard_${slug}`;
 
-const fieldOrderStep2 = ["industry", "brandName", "brandTone", "language"];
+const fieldOrderStep2 = [
+  "industry",
+  "brandName",
+  "brandTone",
+  "styleRequirements",
+  "language",
+];
 const fieldOrderStep3 = [
   "sellingPoints",
   "targetAudience",
@@ -188,6 +195,26 @@ const StartWizardPage: React.FC = () => {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
+  const buildBrief = (): string => {
+    const a = data.answers;
+    const lines = [
+      `# 客戶需求簡報`,
+      ``,
+      `行業別：${a.industry || "未提供"}`,
+      `品牌名稱：${a.brandName || "未提供"}`,
+      `品牌調性：${a.brandTone || "未提供"}`,
+      `風格要求：${a.styleRequirements || "未提供"}`,
+      `語言：${a.language || "繁體中文"}`,
+      `核心賣點：`,
+      ...(a.sellingPoints ? a.sellingPoints.split("\n") : ["未提供"]),
+      `目標客群：${a.targetAudience || "未提供"}`,
+      `聯絡方式：${a.siteContactMethod || "未提供"}`,
+      `禁用詞：${a.forbiddenWords || "無"}`,
+      `其他補充：${a.additionalNotes || "無"}`,
+    ];
+    return lines.join("\n");
+  };
+
   const handleSubmit = async () => {
     if (!validateStep() || !slug || !template) return;
     if (data.honeypot) return;
@@ -196,6 +223,17 @@ const StartWizardPage: React.FC = () => {
     setSubmitError(null);
 
     try {
+      // 1. Generate content with AI
+      const brief = buildBrief();
+      const generated = await generateContent(brief);
+
+      // 2. Save generated content for preview
+      localStorage.setItem(
+        "yoware_generated_content",
+        JSON.stringify(generated.content)
+      );
+
+      // 3. Create order
       const result = await createOrder({
         templateSlug: slug,
         customer: {
@@ -209,12 +247,14 @@ const StartWizardPage: React.FC = () => {
         honeypot: data.honeypot,
       });
 
+      // 4. Clear wizard draft
       if (slug) {
         localStorage.removeItem(STORAGE_KEY(slug));
       }
 
-      navigate("/order-success", {
-        state: { publicId: result.publicId, orderId: result.orderId },
+      // 5. Navigate to generated preview
+      navigate(`/preview?mode=generated&publicId=${result.publicId}`, {
+        replace: true,
       });
     } catch (err) {
       setSubmitError(

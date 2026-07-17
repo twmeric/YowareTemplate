@@ -18,5 +18,6 @@ binding = "MEDIA_BUCKET"
 
 # Create secrets with:
 #   wrangler secret put ADMIN_PASSWORD
+#   wrangler secret put DEMO_PASSWORD
 #   wrangler secret put ADMIN_TOKEN_SECRET
 #   wrangler secret put GITHUB_TOKEN

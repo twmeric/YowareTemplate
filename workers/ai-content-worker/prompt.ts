@@ -20,6 +20,7 @@ Rules:
 6. WhatsApp number must be a realistic placeholder if not provided: "85200000000".
 7. The brand logo should be a single letter or short symbol. logoImage is optional; leave it empty unless the brief explicitly provides a logo URL.
 8. highlightedLines is a zero-based index array indicating which hero title lines use the accent color. Example: [1].
+9. If the brief includes style requirements (風格要求), adjust the tone, vocabulary, and visual direction accordingly. Mention the style subtly in the copy and choose image search keywords that reflect it.
 
 JSON Schema:
 {

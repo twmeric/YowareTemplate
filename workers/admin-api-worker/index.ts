@@ -14,6 +14,7 @@
  *
  * Environment variables (encrypted):
  *   ADMIN_PASSWORD      - Master password for admin access
+ *   DEMO_PASSWORD       - Read-only demo password for prospects
  *   ADMIN_TOKEN_SECRET  - HMAC secret for signing JWTs
  *   GITHUB_TOKEN        - GitHub personal access token with repo scope
  *   GITHUB_REPO         - e.g. "twmeric/YowareTemplate"
@@ -21,6 +22,7 @@
 
 export interface Env {
   ADMIN_PASSWORD: string;
+  DEMO_PASSWORD: string;
   ADMIN_TOKEN_SECRET: string;
   GITHUB_TOKEN: string;
   GITHUB_REPO: string;
@@ -30,8 +32,11 @@ export interface Env {
   DB: D1Database;
 }
 
+type AdminRole = "admin" | "demo";
+
 interface JWTPayload {
   sub: "admin";
+  role: AdminRole;
   site: string;
   iat: number;
   exp: number;
@@ -56,6 +61,13 @@ function errorResponse(message: string, status = 400): Response {
 
 function orderErrorResponse(code: string, message: string, status = 400): Response {
   return jsonResponse({ success: false, error: { code, message } }, status);
+}
+
+function requireAdmin(authPayload: JWTPayload): Response | null {
+  if (authPayload.role === "demo") {
+    return errorResponse("Demo accounts are read-only", 403);
+  }
+  return null;
 }
 
 const VALID_ORDER_STATUSES = ["pending", "reviewing", "accepted", "rejected", "completed", "cancelled"] as const;
@@ -402,18 +414,26 @@ export default {
         return jsonResponse({ ok: true, service: "JKD Admin API" });
       }
 
-      // Password login
+      // Password login (admin or read-only demo)
       if (url.pathname === "/api/login" && request.method === "POST") {
         const { password } = (await request.json()) as { password?: string };
-        if (!password || password !== env.ADMIN_PASSWORD) {
+        let role: AdminRole | null = null;
+        const trimmedPassword = password?.trim();
+        if (trimmedPassword && trimmedPassword === env.ADMIN_PASSWORD?.trim()) {
+          role = "admin";
+        } else if (trimmedPassword && env.DEMO_PASSWORD && trimmedPassword === env.DEMO_PASSWORD.trim()) {
+          role = "demo";
+        }
+
+        if (!role) {
           return errorResponse("Invalid password", 401);
         }
 
         const token = await signJWT(
-          { sub: "admin", site, exp: Math.floor(Date.now() / 1000) + 86400 },
+          { sub: "admin", role, site, exp: Math.floor(Date.now() / 1000) + 86400 },
           env.ADMIN_TOKEN_SECRET
         );
-        return jsonResponse({ success: true, token });
+        return jsonResponse({ success: true, token, role });
       }
 
       // Generate auto-login token (protected by master password)
@@ -427,7 +447,7 @@ export default {
         }
 
         const exp = Math.floor(Date.now() / 1000) + expiresInHours * 3600;
-        const token = await signJWT({ sub: "admin", site, exp }, env.ADMIN_TOKEN_SECRET);
+        const token = await signJWT({ sub: "admin", role: "admin", site, exp }, env.ADMIN_TOKEN_SECRET);
         const adminUrl = `https://${site}/manage?token=${encodeURIComponent(token)}`;
         return jsonResponse({ success: true, token, url: adminUrl, expiresAt: new Date(exp * 1000).toISOString() });
       }
@@ -444,6 +464,9 @@ export default {
       }
 
       if (url.pathname === "/api/content" && request.method === "POST") {
+        const forbidden = requireAdmin(authPayload);
+        if (forbidden) return forbidden;
+
         const { content } = (await request.json()) as { content?: unknown };
         if (!content) return errorResponse("Missing content");
 
@@ -479,6 +502,9 @@ export default {
       }
 
       if (url.pathname === "/api/media" && request.method === "POST") {
+        const forbidden = requireAdmin(authPayload);
+        if (forbidden) return forbidden;
+
         const formData = await request.formData();
         const file = formData.get("file");
         if (!file || !(file instanceof File)) {
@@ -509,6 +535,9 @@ export default {
       }
 
       if (url.pathname.startsWith("/api/media/") && request.method === "DELETE") {
+        const forbidden = requireAdmin(authPayload);
+        if (forbidden) return forbidden;
+
         const key = url.pathname.slice("/api/media/".length);
         if (!key) return errorResponse("Missing key");
         await env.MEDIA_BUCKET.delete(key);
@@ -527,6 +556,8 @@ export default {
           return handleGetOrder(id, env);
         }
         if (request.method === "PATCH") {
+          const forbidden = requireAdmin(authPayload);
+          if (forbidden) return forbidden;
           return handlePatchOrder(request, id, env);
         }
       }

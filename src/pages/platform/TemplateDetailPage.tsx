@@ -7,9 +7,13 @@ import {
   CheckCircle2,
   LayoutTemplate,
   Eye,
+  Settings,
+  Sparkles,
 } from "lucide-react";
 import PlatformLayout from "./PlatformLayout";
 import { getTemplate, type TemplateDetail } from "../../api/platform";
+
+const DEMO_PASSWORD = "demo123";
 
 const TemplateDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -117,8 +121,9 @@ const TemplateDetailPage: React.FC = () => {
                 </p>
 
                 <div className="bg-brand-bg rounded-xl p-6 mb-8">
-                  <h3 className="text-lg font-bold text-brand-green mb-4">
-                    需要填寫的資料
+                  <h3 className="text-lg font-bold text-brand-green mb-4 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5" />
+                    AI 會協助你填入的資料
                   </h3>
                   {template.wizardSchema && template.wizardSchema.length > 0 ? (
                     <ul className="space-y-3">
@@ -139,23 +144,47 @@ const TemplateDetailPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link
-                    to={`/start/${template.slug}`}
-                    className="px-8 py-4 bg-brand-green text-white rounded-full font-bold text-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-green/20"
-                  >
-                    開始製作 <ArrowRight className="w-5 h-5" />
-                  </Link>
+                {/* Experience options */}
+                <div className="space-y-4 mb-8">
+                  <h3 className="text-lg font-bold text-brand-green">
+                    先體驗，再決定
+                  </h3>
 
-                  {template.previewUrl && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Link
-                      to={template.previewUrl}
-                      className="px-8 py-4 border-2 border-brand-green text-brand-green rounded-full font-bold text-lg hover:bg-brand-green hover:text-white transition-all flex items-center justify-center gap-2"
+                      to={template.previewUrl || "/preview"}
+                      className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
                     >
-                      <Eye className="w-5 h-5" /> 預覽效果
+                      <div className="w-10 h-10 bg-brand-green/10 text-brand-green rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Eye className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-brand-green">預覽前台網站</p>
+                        <p className="text-xs text-gray-500">看實際網頁效果</p>
+                      </div>
                     </Link>
-                  )}
+
+                    <Link
+                      to="/manage"
+                      className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+                    >
+                      <div className="w-10 h-10 bg-brand-red/10 text-brand-red rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Settings className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-brand-green">體驗後台管理</p>
+                        <p className="text-xs text-gray-500">Demo 密碼：{DEMO_PASSWORD}</p>
+                      </div>
+                    </Link>
+                  </div>
                 </div>
+
+                <Link
+                  to={`/start/${template.slug}`}
+                  className="w-full sm:w-auto px-8 py-4 bg-brand-green text-white rounded-full font-bold text-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-green/20"
+                >
+                  開始製作 <ArrowRight className="w-5 h-5" />
+                </Link>
               </div>
             </div>
           )}

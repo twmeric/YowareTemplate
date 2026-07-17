@@ -284,8 +284,64 @@ Response:
 - 發送成功後更新 `orders.notification_sent_at` 並寫入 `order_events`（`event='notified'`，`payload={channel:'whatsapp'}`）。
 - 發送失敗記錄 Worker Logs，`notification_sent_at` 留空。
 
-## 5. 前端 API Client
+## 5. AI Content Worker
 
-- `src/api/platform.ts`：封裝 `fetch` 呼叫 Platform Worker。
-- `src/api/admin.ts`：現有 admin client 增加 `getOrders`, `getOrder`, `updateOrder`。
-- URL 從 `import.meta.env.VITE_PLATFORM_API_URL` / `VITE_ADMIN_API_URL` 讀取，缺省值為已部署網址。
+新增直接生成端點：
+
+### POST /api/generate
+
+Request:
+```json
+{ "brief": "行業別：...\n品牌名稱：...\n..." }
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "content": { /* 完整的 SiteContent JSON */ }
+  }
+}
+```
+
+- 直接呼叫 DeepSeek 生成內容，再經 Pixabay 替換圖片。
+- 不寫入 GitHub，將生成的 `content.json` 返回給前端用於即時預覽。
+- CORS 僅允許平台網域。
+
+## 6. Admin API Worker Demo 模式
+
+後台支援兩種登入身份：
+
+| 密碼 | Role | 權限 |
+|---|---|---|
+| `ADMIN_PASSWORD` | `admin` | 完整讀寫 |
+| `DEMO_PASSWORD` | `demo` | 僅供預覽，禁止儲存 |
+
+JWT payload 包含 `role` 欄位。以下端點在 `demo` 角色下回傳 `403`：
+- `POST /api/content`
+- `POST /api/media`
+- `DELETE /api/media/:key`
+- `PATCH /api/orders/:id`
+
+前端 `/manage` 在 demo 模式下顯示提示橫幅，並禁用「儲存」按鈕。
+
+## 7. 前端流程與 API Client
+
+流程：
+1. `/` 模板市集 → 選擇「日出咖啡 Sunrise Brew」
+2. `/templates/:slug` 模板體驗中心：
+   - 預覽前台網站（`/preview`）
+   - 體驗後台管理（`/manage`，Demo 密碼：`demo123`）
+   - 開始製作（`/start/:slug`）
+3. `/start/:slug` 填寫品牌資料（含風格要求）→ 提交
+4. 前端呼叫 `POST /api/generate` 生成內容
+5. 將生成內容存入 `localStorage`，並呼叫 `POST /api/orders` 建立訂單
+6. 導向 `/preview?mode=generated&publicId=...` 預覽 AI 生成結果
+7. 同時觸發 WhatsApp 通知給平台主理人
+
+Client 檔案：
+- `src/api/platform.ts`：Platform Worker。
+- `src/api/admin.ts`：Admin Worker（含 `getTokenRole`、`isDemo`）。
+- `src/api/ai.ts`：AI Worker `/api/generate`。
+- URL 從 `import.meta.env.VITE_PLATFORM_API_URL` / `VITE_ADMIN_API_URL` / `VITE_AI_API_URL` 讀取。

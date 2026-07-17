@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2 } from "lucide-react";
-import { login, logout, loadContent, saveContent, setToken, AdminAPIError } from "../api/admin";
+import { login, logout, loadContent, saveContent, setToken, AdminAPIError, getTokenRole } from "../api/admin";
 import ImageInput from "../components/admin/ImageInput";
 import MediaLibrary from "../components/admin/MediaLibrary";
 import OrdersTab from "../components/admin/OrdersTab";
@@ -28,6 +28,8 @@ const DEFAULT_CONTENT: SiteContent = {
 const Admin: React.FC = () => {
   document.title = "網站後台管理";
   const [token, setTokenState] = useState<string | null>(localStorage.getItem("jkd_admin_token"));
+  const [role, setRole] = useState<"admin" | "demo" | null>(getTokenRole());
+  const isDemo = role === "demo";
   const [password, setPassword] = useState("");
   const [content, setContent] = useState<SiteContent>(DEFAULT_CONTENT);
   const [loading, setLoading] = useState(true);
@@ -42,8 +44,9 @@ const Admin: React.FC = () => {
     if (urlToken) {
       setToken(urlToken);
       setTokenState(urlToken);
+      setRole(getTokenRole());
       // Clean token from URL
-      window.history.replaceState({}, "", "/admin");
+      window.history.replaceState({}, "", "/manage");
     }
   }, []);
 
@@ -75,6 +78,7 @@ const Admin: React.FC = () => {
     try {
       const t = await login(password);
       setTokenState(t);
+      setRole(getTokenRole());
     } catch (err) {
       setMessage({ type: "error", text: err instanceof AdminAPIError ? err.message : "登入失敗" });
       setLoading(false);
@@ -97,6 +101,7 @@ const Admin: React.FC = () => {
   const handleLogout = () => {
     logout();
     setTokenState(null);
+    setRole(null);
     setContent(DEFAULT_CONTENT);
   };
 
@@ -105,7 +110,7 @@ const Admin: React.FC = () => {
       <div className="min-h-screen bg-brand-bg flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
           <h1 className="text-2xl font-bold text-brand-green mb-2">後台管理</h1>
-          <p className="text-gray-500 mb-6">請輸入管理密碼</p>
+          <p className="text-gray-500 mb-6">請輸入管理密碼或 Demo 密碼</p>
           {message && (
             <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
               {message.type === "error" ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
@@ -173,11 +178,15 @@ const Admin: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-brand-green text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center gap-2"
+              disabled={saving || isDemo}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                isDemo
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-brand-green text-white hover:bg-opacity-90"
+              }`}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? "儲存中..." : "儲存"}
+              {isDemo ? "Demo 模式僅供預覽" : saving ? "儲存中..." : "儲存"}
             </button>
             <button
               onClick={handleLogout}
@@ -189,6 +198,18 @@ const Admin: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Demo mode banner */}
+      {isDemo && (
+        <div className="bg-yellow-50 border-b border-yellow-100">
+          <div className="container mx-auto px-4 py-3 flex items-center gap-2 text-yellow-800 text-sm">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span>
+              你目前使用 <strong>Demo 後台</strong> 僅供預覽，所有變更不會儲存。如需完整權限請使用管理員帳號登入。
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Message */}
       {message && (
