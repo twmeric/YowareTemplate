@@ -21,6 +21,8 @@ export interface Env {
   PLATFORM_ORIGIN: string;
   RATE_LIMIT_PER_HOUR: string;
   ADMIN_TOKEN_SECRET: string;
+  WEBHOOK_KEY: string;
+  PLATFORM_ADMIN_PASSWORD: string;
 }
 
 const ALLOWED_ORIGINS: Array<string | RegExp> = [
@@ -113,6 +115,102 @@ function generatePublicId(now = new Date()): string {
     random += chars[array[i] % chars.length];
   }
   return `YWT-${yyyymmdd}-${random}`;
+}
+
+function generateVerifyCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  const array = new Uint8Array(6);
+  crypto.getRandomValues(array);
+  for (let i = 0; i < 6; i++) {
+    code += chars[array[i] % chars.length];
+  }
+  return code;
+}
+
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("852") && digits.length === 11) return digits;
+  if (digits.length === 8) return `852${digits}`;
+  return digits;
+}
+
+function extractPhoneFromWebhook(body: Record<string, unknown>): string | null {
+  const candidates = [
+    body.phone,
+    body.from,
+    body.sender,
+    body.waId,
+    body.wa_id,
+    (body as any).entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
+    (body as any).payload?.phone,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.length > 0) return normalizePhone(c);
+  }
+  return null;
+}
+
+function extractMessageFromWebhook(body: Record<string, unknown>): string | null {
+  const candidates = [
+    body.message,
+    body.text,
+    body.body,
+    (body as any).payload?.message,
+    (body as any).entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.length > 0) return c;
+  }
+  return null;
+}
+
+async function createVerificationSession(
+  db: D1Database,
+  code: string,
+  ip: string,
+  expiresInSeconds = 300
+): Promise<void> {
+  const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  await db
+    .prepare("INSERT INTO verification_sessions (code, ip, expires_at) VALUES (?, ?, ?)")
+    .bind(code, ip, expiresAt)
+    .run();
+}
+
+async function getVerificationSession(
+  db: D1Database,
+  code: string
+): Promise<{ code: string; phone: string | null; verified: boolean; expired: boolean } | null> {
+  const row = await db
+    .prepare("SELECT * FROM verification_sessions WHERE code = ?")
+    .bind(code)
+    .first<Record<string, unknown>>();
+  if (!row) return null;
+
+  const now = Math.floor(Date.now() / 1000);
+  const expired = row.expires_at ? Number(row.expires_at) < now : false;
+  return {
+    code: String(row.code),
+    phone: row.phone ? String(row.phone) : null,
+    verified: row.verified === 1,
+    expired,
+  };
+}
+
+async function markVerificationVerified(
+  db: D1Database,
+  code: string,
+  phone: string
+): Promise<boolean> {
+  const now = Math.floor(Date.now() / 1000);
+  const result = await db
+    .prepare(
+      "UPDATE verification_sessions SET verified = 1, phone = ?, verified_at = ? WHERE code = ? AND verified = 0"
+    )
+    .bind(phone, now, code)
+    .run();
+  return result.success;
 }
 
 function getClientIp(request: Request): string {
@@ -217,7 +315,7 @@ async function sendWhatsAppNotification(
     `客戶 WhatsApp：${order.customerWhatsapp || "未提供"}\n` +
     `品牌名稱：${order.brandName || "未提供"}\n` +
     `需求摘要：${order.briefSummary}\n` +
-    `後台連結：https://yowaretemplate.pages.dev/manage/orders`;
+    `後台連結：https://yowaretemplate.pages.dev/platform-admin`;
 
   try {
     const encodedMessage = encodeURIComponent(message);
@@ -460,6 +558,149 @@ export default {
         );
       }
 
+      // --------------------------------------------------
+      // WhatsApp Verification Flow
+      // --------------------------------------------------
+      if (url.pathname === "/api/verify/request" && request.method === "POST") {
+        const clientIp = getClientIp(request);
+        const rateLimit = parseInt(env.RATE_LIMIT_PER_HOUR || "10", 10) || 10;
+        if (!checkRateLimit(clientIp, rateLimit)) {
+          return errorResponse("RATE_LIMITED", "Too many verification requests. Please try again later.", request, 429);
+        }
+
+        const code = generateVerifyCode();
+        await createVerificationSession(env.DB, code, clientIp);
+
+        return jsonResponse({ success: true, data: { code, expiresIn: 300 } }, request);
+      }
+
+      if (url.pathname === "/api/verify/status" && request.method === "GET") {
+        const code = url.searchParams.get("code");
+        if (!code) {
+          return errorResponse("VALIDATION_ERROR", "Missing verification code", request, 400);
+        }
+
+        const session = await getVerificationSession(env.DB, code);
+        if (!session) {
+          return jsonResponse({ success: true, data: { verified: false, exists: false } }, request);
+        }
+
+        return jsonResponse(
+          {
+            success: true,
+            data: {
+              verified: session.verified,
+              expired: session.expired,
+              phone: session.phone,
+              exists: true,
+            },
+          },
+          request
+        );
+      }
+
+      // --------------------------------------------------
+      // Webhook: WhatsApp (CloudWAPI / Meta / Generic)
+      // --------------------------------------------------
+      if (url.pathname === "/api/webhooks/whatsapp" && request.method === "POST") {
+        const webhookKey = (request.headers.get("x-webhook-key") || "").trim();
+        const expectedKey = (env.WEBHOOK_KEY || "").trim();
+        if (expectedKey && webhookKey !== expectedKey) {
+          return errorResponse("UNAUTHORIZED", "Invalid webhook key", request, 401);
+        }
+
+        let body: Record<string, unknown>;
+        try {
+          body = (await request.json()) as Record<string, unknown>;
+        } catch {
+          return errorResponse("VALIDATION_ERROR", "Invalid JSON body", request, 400);
+        }
+
+        const phone = extractPhoneFromWebhook(body);
+        const message = extractMessageFromWebhook(body);
+
+        if (!phone || !message) {
+          return jsonResponse({ success: true, message: "received (no actionable content)" }, request);
+        }
+
+        // Look for a 6-char verification code in the message
+        const codeMatch = message.match(/[A-HJ-NP-Y2-9]{6}/i);
+        if (!codeMatch) {
+          return jsonResponse({ success: true, message: "received (no verification code)" }, request);
+        }
+
+        const code = codeMatch[0].toUpperCase();
+        const session = await getVerificationSession(env.DB, code);
+        if (!session || session.expired) {
+          return jsonResponse({ success: true, message: "received (code not found or expired)" }, request);
+        }
+
+        await markVerificationVerified(env.DB, code, phone);
+        return jsonResponse({ success: true, message: "verified", phone }, request);
+      }
+
+      // --------------------------------------------------
+      // Platform Admin Endpoints
+      // --------------------------------------------------
+      if (url.pathname === "/api/admin/login" && request.method === "POST") {
+        let body: Record<string, unknown>;
+        try {
+          body = (await request.json()) as Record<string, unknown>;
+        } catch {
+          return errorResponse("VALIDATION_ERROR", "Invalid JSON body", request, 400);
+        }
+
+        const password = String(body.password || "").trim();
+        const expectedPassword = (env.PLATFORM_ADMIN_PASSWORD || env.ADMIN_TOKEN_SECRET || "").trim();
+        if (!password || password !== expectedPassword) {
+          return errorResponse("UNAUTHORIZED", "Invalid password", request, 401);
+        }
+
+        const token = await signJwt({ role: "platform_admin" }, env.ADMIN_TOKEN_SECRET, 86400);
+        return jsonResponse({ success: true, data: { token } }, request);
+      }
+
+      if (url.pathname === "/api/admin/orders" && request.method === "GET") {
+        const auth = request.headers.get("Authorization") || "";
+        const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        const payload = await verifyJwt(token, env.ADMIN_TOKEN_SECRET);
+        if (!payload || payload.role !== "platform_admin") {
+          return errorResponse("UNAUTHORIZED", "Invalid or expired token", request, 401);
+        }
+
+        const { results } = await env.DB.prepare(
+          `SELECT
+            o.id, o.public_id, o.status, o.brief_answers, o.source_ip, o.notification_sent_at,
+            o.created_at, o.updated_at,
+            c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone, c.whatsapp AS customer_whatsapp
+           FROM orders o
+           JOIN customers c ON c.id = o.customer_id
+           ORDER BY o.created_at DESC
+           LIMIT 200`
+        ).all<Record<string, unknown>>();
+
+        return jsonResponse(
+          {
+            success: true,
+            data: (results ?? []).map((row) => ({
+              id: row.id,
+              publicId: row.public_id,
+              status: row.status,
+              customerName: row.customer_name,
+              customerEmail: row.customer_email,
+              customerPhone: row.customer_phone,
+              customerWhatsapp: row.customer_whatsapp,
+              briefAnswers: safeJsonParse(row.brief_answers as string),
+              sourceIp: row.source_ip,
+              notificationSentAt: row.notification_sent_at,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            })),
+          },
+          request
+        );
+      }
+
       return errorResponse("NOT_FOUND", "Not found", request, 404);
     } catch (err) {
       const message = err instanceof Error ? err.message : "unknown error";
@@ -468,3 +709,79 @@ export default {
     }
   },
 };
+
+// --------------------------------------------------
+// Simple JWT helpers (HS256)
+// --------------------------------------------------
+function base64UrlEncode(buffer: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function base64UrlDecode(input: string): Uint8Array {
+  const padded = input.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (input.length % 4)) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function signJwt(payload: Record<string, unknown>, secret: string, expiresInSeconds = 86400): Promise<string> {
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const body = { ...payload, iat: now, exp: now + expiresInSeconds };
+  const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
+  const encodedBody = base64UrlEncode(new TextEncoder().encode(JSON.stringify(body)));
+  const signingInput = `${encodedHeader}.${encodedBody}`;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signingInput));
+  return `${signingInput}.${base64UrlEncode(signature)}`;
+}
+
+async function verifyJwt(token: string, secret: string): Promise<Record<string, unknown> | null> {
+  try {
+    const [encodedHeader, encodedBody, encodedSignature] = token.split(".");
+    if (!encodedHeader || !encodedBody || !encodedSignature) return null;
+
+    const signingInput = `${encodedHeader}.${encodedBody}`;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      base64UrlDecode(encodedSignature),
+      new TextEncoder().encode(signingInput)
+    );
+    if (!valid) return null;
+
+    const body = JSON.parse(new TextDecoder().decode(base64UrlDecode(encodedBody)));
+    const now = Math.floor(Date.now() / 1000);
+    if (body.exp && body.exp < now) return null;
+    return body as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function safeJsonParse(input: string): unknown {
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+}

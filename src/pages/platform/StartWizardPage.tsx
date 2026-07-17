@@ -7,9 +7,17 @@ import {
   CheckCircle2,
   AlertCircle,
   Send,
+  MessageCircle,
+  RefreshCw,
 } from "lucide-react";
 import PlatformLayout from "./PlatformLayout";
-import { getTemplate, createOrder, type TemplateDetail } from "../../api/platform";
+import {
+  getTemplate,
+  createOrder,
+  requestVerificationCode,
+  checkVerificationStatus,
+  type TemplateDetail,
+} from "../../api/platform";
 import { generateContent } from "../../api/ai";
 
 type PreferredContact = "email" | "phone" | "whatsapp";
@@ -64,6 +72,14 @@ const StartWizardPage: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // WhatsApp verification state
+  const [verifyCode, setVerifyCode] = useState<string | null>(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<"idle" | "polling" | "verified" | "expired" | "error">("idle");
+  const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+
   useEffect(() => {
     if (!slug) {
       navigate("/templates", { replace: true });
@@ -111,6 +127,49 @@ const StartWizardPage: React.FC = () => {
     localStorage.setItem(STORAGE_KEY(slug), JSON.stringify(data));
   }, [data, slug]);
 
+  // Poll WhatsApp verification status
+  useEffect(() => {
+    if (!verifyCode || verifyStatus !== "polling") return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const status = await checkVerificationStatus(verifyCode);
+        if (cancelled) return;
+        if (status.verified && status.phone) {
+          setVerifyStatus("verified");
+          setVerifyPhone(status.phone);
+          setData((prev) => ({
+            ...prev,
+            phone: status.phone || prev.phone,
+            whatsapp: status.phone || prev.whatsapp,
+            preferredContact: "whatsapp",
+          }));
+          // Auto-advance to brand info step after a short delay
+          setTimeout(() => {
+            if (!cancelled) {
+              setStep((prev) => Math.min(prev + 1, totalSteps));
+            }
+          }, 1200);
+          return;
+        }
+        if (status.expired) {
+          setVerifyStatus("expired");
+          return;
+        }
+      } catch (err) {
+        console.error("Verification status check failed:", err);
+      }
+      setTimeout(poll, 3000);
+    };
+
+    const timer = setTimeout(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [verifyCode, verifyStatus, totalSteps]);
+
   const schemaMap = useMemo(() => {
     const map = new Map<string, { label: string; required?: boolean }>();
     template?.wizardSchema?.forEach((field) => {
@@ -136,6 +195,28 @@ const StartWizardPage: React.FC = () => {
     setFieldErrors({});
   };
 
+  const startVerification = async () => {
+    setVerifyLoading(true);
+    setVerifyError(null);
+    setVerifyStatus("idle");
+    try {
+      const session = await requestVerificationCode();
+      setVerifyCode(session.code);
+      setVerifyStatus("polling");
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : "無法取得驗證碼");
+      setVerifyStatus("error");
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const openWhatsApp = (code: string) => {
+    const message = encodeURIComponent(`驗證碼：${code}\n（請直接發送此訊息以驗證）`);
+    const receiver = "85262322466";
+    window.open(`https://wa.me/${receiver}?text=${message}`, "_blank");
+  };
+
   const updateAnswer = (name: string, value: string) => {
     setData((prev) => ({
       ...prev,
@@ -152,15 +233,8 @@ const StartWizardPage: React.FC = () => {
     const errors: Record<string, string> = {};
 
     if (step === 1) {
-      if (!data.name.trim()) errors.name = "請輸入聯絡人姓名";
-      if (!data.email.trim()) {
-        errors.email = "請輸入電子郵件";
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-        errors.email = "請輸入有效的電子郵件格式";
-      }
-      if (!data.phone.trim()) errors.phone = "請輸入聯絡電話";
-      if (data.preferredContact === "whatsapp" && !data.whatsapp.trim()) {
-        errors.whatsapp = "選擇 WhatsApp 時請輸入 WhatsApp 號碼";
+      if (verifyStatus !== "verified") {
+        errors._verify = "請先完成 WhatsApp 驗證";
       }
     }
 
@@ -180,6 +254,15 @@ const StartWizardPage: React.FC = () => {
           errors[name] = `請輸入${meta.label}`;
         }
       });
+    }
+
+    if (step === totalSteps) {
+      if (!data.name.trim()) errors.name = "請輸入聯絡人姓名";
+      if (!data.email.trim()) {
+        errors.email = "請輸入電子郵件";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.email = "請輸入有效的電子郵件格式";
+      }
     }
 
     setFieldErrors(errors);
@@ -267,95 +350,93 @@ const StartWizardPage: React.FC = () => {
 
   const renderContactStep = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
-            聯絡人姓名 <span className="text-jkd-gold">*</span>
-          </label>
-          <input
-            type="text"
-            value={data.name}
-            onChange={(e) => updateData({ name: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
-            placeholder="例如：王小明"
-          />
-          {fieldErrors.name && (
-            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {fieldErrors.name}
-            </p>
-          )}
+      <div className="bg-jkd-black-700/50 border border-jkd-gold/20 rounded-xl p-6 text-center">
+        <div className="w-16 h-16 bg-[#25D366] rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+          <MessageCircle className="w-8 h-8" />
         </div>
+        <h3 className="text-xl font-bold text-jkd-white mb-2">用 WhatsApp 一鍵驗證</h3>
+        <p className="text-jkd-gray-300 text-sm mb-6">
+          點擊下方按鈕開啟 WhatsApp，發送驗證碼後即可繼續填寫品牌資料。
+          <br />
+          在電腦上會顯示 QR Code，請用手機 WhatsApp 掃描。
+        </p>
 
-        <div>
-          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
-            電子郵件 <span className="text-jkd-gold">*</span>
-          </label>
-          <input
-            type="email"
-            value={data.email}
-            onChange={(e) => updateData({ email: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
-            placeholder="ming@example.com"
-          />
-          {fieldErrors.email && (
-            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {fieldErrors.email}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
-            聯絡電話 <span className="text-jkd-gold">*</span>
-          </label>
-          <input
-            type="tel"
-            value={data.phone}
-            onChange={(e) => updateData({ phone: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
-            placeholder="+852 9876 5432"
-          />
-          {fieldErrors.phone && (
-            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {fieldErrors.phone}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
-            WhatsApp 號碼
-          </label>
-          <input
-            type="tel"
-            value={data.whatsapp}
-            onChange={(e) => updateData({ whatsapp: e.target.value })}
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
-            placeholder="85298765432"
-          />
-          {fieldErrors.whatsapp && (
-            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {fieldErrors.whatsapp}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
-            偏好聯絡方式 <span className="text-jkd-gold">*</span>
-          </label>
-          <select
-            value={data.preferredContact}
-            onChange={(e) =>
-              updateData({ preferredContact: e.target.value as PreferredContact })
-            }
-            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800 text-jkd-white"
+        {verifyStatus === "idle" || verifyStatus === "error" ? (
+          <button
+            onClick={startVerification}
+            disabled={verifyLoading}
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[#25D366] text-white rounded-full font-bold text-lg hover:bg-[#128C7E] transition-colors shadow-lg disabled:opacity-70"
           >
-            <option value="email">電子郵件</option>
-            <option value="phone">電話</option>
-            <option value="whatsapp">WhatsApp</option>
-          </select>
-        </div>
+            {verifyLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <MessageCircle className="w-5 h-5" />
+            )}
+            {verifyLoading ? "取得驗證碼中..." : "開啟 WhatsApp 驗證"}
+          </button>
+        ) : verifyStatus === "polling" && verifyCode ? (
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-jkd-black-800 border border-jkd-gold/30 rounded-xl">
+              <span className="text-jkd-gray-300">你的驗證碼：</span>
+              <span className="text-2xl font-mono font-bold text-jkd-gold tracking-widest">
+                {verifyCode}
+              </span>
+            </div>
+            <div>
+              <button
+                onClick={() => openWhatsApp(verifyCode)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-full font-bold hover:bg-[#128C7E] transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                開啟 WhatsApp 發送驗證碼
+              </button>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-jkd-gray-300 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              等待驗證中，請在 WhatsApp 發送驗證碼...
+            </div>
+            <p className="text-xs text-jkd-gray-300">
+              沒有收到？
+              <button
+                onClick={startVerification}
+                className="text-jkd-gold hover:underline ml-1 inline-flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" /> 重新取得驗證碼
+              </button>
+            </p>
+          </div>
+        ) : verifyStatus === "verified" ? (
+          <div className="flex flex-col items-center gap-3 text-jkd-gold">
+            <CheckCircle2 className="w-12 h-12" />
+            <p className="font-bold text-lg">WhatsApp 驗證成功</p>
+            {verifyPhone && (
+              <p className="text-sm text-jkd-gray-300">已驗證號碼：{verifyPhone}</p>
+            )}
+            <p className="text-sm text-jkd-gray-300">即將進入品牌資訊...</p>
+          </div>
+        ) : verifyStatus === "expired" ? (
+          <div className="space-y-4">
+            <p className="text-jkd-gold font-medium">驗證碼已過期</p>
+            <button
+              onClick={startVerification}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-full font-bold hover:bg-[#128C7E] transition-colors"
+            >
+              <RefreshCw className="w-5 h-5" />
+              重新取得驗證碼
+            </button>
+          </div>
+        ) : null}
+
+        {verifyError && (
+          <p className="mt-4 text-sm text-jkd-gold flex items-center justify-center gap-1">
+            <AlertCircle className="w-4 h-4" /> {verifyError}
+          </p>
+        )}
+        {fieldErrors._verify && (
+          <p className="mt-4 text-sm text-jkd-gold flex items-center justify-center gap-1">
+            <AlertCircle className="w-4 h-4" /> {fieldErrors._verify}
+          </p>
+        )}
       </div>
 
       {/* Honeypot */}
@@ -428,34 +509,63 @@ const StartWizardPage: React.FC = () => {
     <div className="space-y-6">
       <div className="bg-jkd-black-800 text-jkd-white rounded-xl p-6">
         <h3 className="text-lg font-bold text-jkd-gold mb-4">聯絡資料</h3>
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <dt className="text-jkd-gray-300">姓名</dt>
-            <dd className="font-medium">{data.name}</dd>
+            <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
+              聯絡人姓名 <span className="text-jkd-gold">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.name}
+              onChange={(e) => updateData({ name: e.target.value })}
+              className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+              placeholder="例如：王小明"
+            />
+            {fieldErrors.name && (
+              <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> {fieldErrors.name}
+              </p>
+            )}
           </div>
           <div>
-            <dt className="text-jkd-gray-300">電子郵件</dt>
-            <dd className="font-medium">{data.email}</dd>
+            <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
+              電子郵件 <span className="text-jkd-gold">*</span>
+            </label>
+            <input
+              type="email"
+              value={data.email}
+              onChange={(e) => updateData({ email: e.target.value })}
+              className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-black-800 text-jkd-white focus:outline-none focus:ring-2 focus:ring-jkd-gold"
+              placeholder="ming@example.com"
+            />
+            {fieldErrors.email && (
+              <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> {fieldErrors.email}
+              </p>
+            )}
           </div>
           <div>
-            <dt className="text-jkd-gray-300">電話</dt>
-            <dd className="font-medium">{data.phone}</dd>
+            <label className="block text-sm font-medium text-jkd-gray-200 mb-1">已驗證電話</label>
+            <input
+              type="tel"
+              value={data.phone}
+              readOnly
+              className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg bg-jkd-gray-400/20 text-jkd-gray-200 cursor-not-allowed"
+            />
           </div>
           <div>
-            <dt className="text-jkd-gray-300">偏好聯絡方式</dt>
-            <dd className="font-medium">
-              {data.preferredContact === "email" && "電子郵件"}
-              {data.preferredContact === "phone" && "電話"}
-              {data.preferredContact === "whatsapp" && "WhatsApp"}
-            </dd>
+            <label className="block text-sm font-medium text-jkd-gray-200 mb-1">偏好聯絡方式</label>
+            <select
+              value={data.preferredContact}
+              onChange={(e) => updateData({ preferredContact: e.target.value as PreferredContact })}
+              className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800 text-jkd-white"
+            >
+              <option value="email">電子郵件</option>
+              <option value="phone">電話</option>
+              <option value="whatsapp">WhatsApp</option>
+            </select>
           </div>
-          {data.whatsapp && (
-            <div>
-              <dt className="text-jkd-gray-300">WhatsApp</dt>
-              <dd className="font-medium">{data.whatsapp}</dd>
-            </div>
-          )}
-        </dl>
+        </div>
       </div>
 
       {visibleStep2Fields.length > 0 && (
@@ -532,7 +642,7 @@ const StartWizardPage: React.FC = () => {
   };
 
   const stepTitles = useMemo(() => {
-    const titles = ["聯絡資料"];
+    const titles = ["WhatsApp 驗證"];
     if (visibleStep2Fields.length > 0) titles.push("品牌資訊");
     if (visibleStep3Fields.length > 0) titles.push("業務內容");
     titles.push("確認與送出");

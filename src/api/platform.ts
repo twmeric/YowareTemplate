@@ -132,9 +132,38 @@ export async function getOrderStatus(
   );
 }
 
+export interface VerificationSession {
+  code: string;
+  expiresIn: number;
+}
+
+export interface VerificationStatus {
+  verified: boolean;
+  expired?: boolean;
+  phone?: string;
+  exists?: boolean;
+}
+
+export async function requestVerificationCode(): Promise<VerificationSession> {
+  return request<VerificationSession>("/api/verify/request", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function checkVerificationStatus(
+  code: string
+): Promise<VerificationStatus> {
+  return request<VerificationStatus>(
+    `/api/verify/status?code=${encodeURIComponent(code)}`
+  );
+}
+
 export default {
   listTemplates,
   getTemplate,
   createOrder,
   getOrderStatus,
+  requestVerificationCode,
+  checkVerificationStatus,
 };

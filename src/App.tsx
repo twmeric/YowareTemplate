@@ -8,6 +8,7 @@ import {
   TemplateDetailPage,
   StartWizardPage,
   OrderSuccessPage,
+  PlatformAdminPage,
   NotFoundPage,
 } from "./pages/platform";
 
@@ -22,6 +23,7 @@ const App: React.FC = () => {
         <Route path="/order-success" element={<OrderSuccessPage />} />
         <Route path="/preview" element={<LandingPreview />} />
         <Route path="/manage" element={<Admin />} />
+        <Route path="/platform-admin" element={<PlatformAdminPage />} />
         <Route path="/manage/*" element={<Admin />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
