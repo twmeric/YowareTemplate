@@ -106,7 +106,7 @@
       {
         "id": "p1",
         "name": "衣索比亞 耶加雪菲 手沖咖啡",
-        "price": 55,
+        "price": 40,
         "originalPrice": 0,
         "image": "https://pixabay.com/get/g762b21a78b9381b53bb3e2ab65d154b97416ea9f800583fdf1c8c720c551df450bec9908b61dd9a73a587077979e5959a2bda979687436ff71f501b9561e9594_1280.jpg",
         "category": "咖啡飲品",
@@ -116,7 +116,7 @@
         "id": "p2",
         "name": "哥倫比亞 蕙蘭 手沖咖啡",
         "price": 50,
-        "originalPrice": 0,
+        "originalPrice": 50,
         "image": "https://pixabay.com/get/g9ef8ab1d84d7048b2682c5a770e5fea7c2c02deea7ac8653d47cfaf22829bf5e505c803326d546336f19113d19267a07baff4384df778cb85545652e629ce403_1280.jpg",
         "category": "咖啡飲品",
         "tag": ""
