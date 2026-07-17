@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2, ArrowLeft, Share2, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { login, logout, loadContent, saveContent, setToken, AdminAPIError, getTokenRole } from "../api/admin";
 import ImageInput from "../components/admin/ImageInput";
@@ -36,6 +36,7 @@ const Admin: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [activeSection, setActiveSection] = useState("brand");
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     // Check for auto-login token in URL
@@ -105,12 +106,52 @@ const Admin: React.FC = () => {
     setContent(DEFAULT_CONTENT);
   };
 
+  const handleShareManage = async () => {
+    const url = `${window.location.origin}/manage`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: document.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   if (!token) {
     return (
       <div className="min-h-screen bg-brand-bg flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-          <h1 className="text-2xl font-bold text-brand-green mb-2">後台管理</h1>
-          <p className="text-gray-500 mb-6">請輸入管理密碼或 Demo 密碼</p>
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <div>
+              <h1 className="text-2xl font-bold text-brand-green">後台管理</h1>
+              <p className="text-gray-500 mt-1">請輸入管理密碼或 Demo 密碼</p>
+            </div>
+            <button
+              onClick={handleShareManage}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-brand-green border border-brand-green rounded-full hover:bg-brand-green hover:text-white transition-colors"
+              title="分享此後台"
+            >
+              {shareCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              {shareCopied ? "已複製" : "分享"}
+            </button>
+          </div>
+          <div className="mb-6 p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <span className="font-bold">Demo 密碼：</span>
+              <span className="font-mono font-bold text-brand-green">demo123</span>
+              <span className="block text-xs text-yellow-700 mt-1">分享給別人時，請一併提供此密碼。</span>
+            </p>
+          </div>
           {message && (
             <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
               {message.type === "error" ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}

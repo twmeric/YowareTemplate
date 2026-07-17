@@ -17,6 +17,7 @@ import {
   Check,
   Phone,
   RotateCcw,
+  Share2,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useContent } from "../hooks/useContent";
@@ -31,7 +32,37 @@ const socialIconMap: Record<string, React.ReactNode> = {
 const LandingPreview: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isGenerated = searchParams.get("mode") === "generated";
+  const isShared = searchParams.get("shared") === "1";
   const publicId = searchParams.get("publicId");
+
+  const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("shared", "1");
+    const shareUrl = url.toString();
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: document.title,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const fetched = useContent();
   const [generatedContent, setGeneratedContent] = useState<SiteContent | null>(null);
@@ -63,7 +94,6 @@ const LandingPreview: React.FC = () => {
   const [cart, setCart] = useState<Product[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -113,7 +143,7 @@ const LandingPreview: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans selection:bg-brand-green selection:text-white">
-      {isGenerated ? (
+      {!isShared && isGenerated && (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-brand-green text-white px-4 py-3">
           <div className="container mx-auto flex flex-col lg:flex-row items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-2">
@@ -152,46 +182,61 @@ const LandingPreview: React.FC = () => {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {!isShared && !isGenerated && (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-brand-green text-white px-4 py-3">
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-sm">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               <span>這是模板預覽，你可以生成一個屬於自己的網站</span>
             </div>
-            <Link
-              to="/start/landing-v1"
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-white text-brand-green rounded-full font-bold text-xs hover:bg-brand-bg transition-colors"
-            >
-              立即生成 <ArrowRight className="w-3 h-3" />
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={handleShare}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full font-medium transition-colors"
+              >
+                {shareCopied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+                {shareCopied ? "已複製連結" : "分享此設計"}
+              </button>
+              <Link
+                to="/start/landing-v1"
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-white text-brand-green rounded-full font-bold text-xs hover:bg-brand-bg transition-colors"
+              >
+                立即生成 <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
       {/* Header */}
       <header
-        className={`fixed top-10 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed ${isShared ? "top-0" : "top-10"} left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"
         }`}
       >
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green text-white rounded-full text-sm font-bold shadow-md hover:bg-brand-red transition-colors animate-pulse"
-              title="返回主頁"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              返回主頁
-            </Link>
-            <Link
-              to="/"
-              className="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-brand-green text-white rounded-full shadow-md hover:bg-brand-red transition-colors animate-pulse"
-              title="返回主頁"
-            >
-              <Home className="w-5 h-5" />
-            </Link>
+            {!isShared && (
+              <>
+                <Link
+                  to="/"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green text-white rounded-full text-sm font-bold shadow-md hover:bg-brand-red transition-colors animate-pulse"
+                  title="返回主頁"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  返回主頁
+                </Link>
+                <Link
+                  to="/"
+                  className="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-brand-green text-white rounded-full shadow-md hover:bg-brand-red transition-colors animate-pulse"
+                  title="返回主頁"
+                >
+                  <Home className="w-5 h-5" />
+                </Link>
+              </>
+            )}
             <div
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
