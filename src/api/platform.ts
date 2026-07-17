@@ -9,6 +9,7 @@ export interface TemplateSummary {
   thumbnailUrl: string;
   previewUrl: string;
   adminUrl: string;
+  templateType: string;
   basePrice: number;
   currency: string;
   isFeatured: boolean;
@@ -30,6 +31,8 @@ export interface TemplateDetail {
   thumbnailUrl: string;
   previewUrl: string;
   adminUrl: string;
+  templateType: string;
+  adapterConfig?: Record<string, unknown> | null;
   basePrice: number;
   currency: string;
   wizardSchema: WizardField[];

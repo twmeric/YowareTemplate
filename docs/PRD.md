@@ -32,14 +32,16 @@
 
 ### 1.3 Phase 1 目標
 
-在現有模板之上疊加一層「客戶自助平台」，並將架構從「單一內建模板 + 外部獨立部署第二模板」調整為「所有模板統一內建於平台」的多模板架構：
+在現有模板之上疊加一層「客戶自助平台」，並將架構調整為「所有模板統一內建於平台」的多模板架構。Phase 1 **不再採人工履約**，而是在客戶完成付款後，由經營者一鍵觸發自動開站：
 
 1. 讓潛在客戶可以在公開網站瀏覽所有內建模板、預覽效果、填寫需求。
-2. 將填寫結果轉為結構化訂單，儲存在後端資料庫；訂單須記錄所選模板，供 AI Worker 依 `templateSlug` 輸出對應內容格式。
-3. 自動通知平台經營者，並在既有 `/manage` 後台提供訂單審閱與狀態管理。
-4. **Phase 1 仍採人工履約**：經營者收到訂單後，沿用現有的 GitHub 模板複製 + AI 生成流程為客戶建立網站。
+2. 將填寫結果轉為結構化訂單，儲存在後端資料庫；訂單須記錄所選模板、期望域名與微調需求。
+3. AI 根據 `templateSlug` 與問卷答案即時生成專屬預覽 `/preview?mode=generated`，讓客戶在付款前就能看到網站樣貌。
+4. 客戶在預覽頁確認後，於「確認與送出」步驟填寫期望域名與微調需求，正式提交訂單。
+5. 自動通知平台經營者，並在 `/platform-admin` 後台提供訂單審閱、付款確認與一鍵開站功能。
+6. **經營者確認收款後點擊「一鍵開站」**，系統自動：從模板建立客戶 GitHub repo → 寫入 brief.txt → 觸發 AI Worker → 生成/部署 content.json → 建立 Cloudflare Pages 專案 → 綁定客戶 domain → 發送交付通知。
 
-> 簡言之：Phase 1 是把「GitHub 後台操作」包裝成客戶可見的銷售漏斗，同時讓平台可內建多套模板；履約仍由人工完成。
+> 簡言之：Phase 1 是「客戶可見的銷售漏斗 + 付款閘 + 自動開站」的完整閉環；模板統一內建於平台，客戶網站仍為獨立 repo + 獨立 Pages 專案。
 
 ---
 
@@ -60,8 +62,8 @@
 | 屬性 | 說明 |
 |------|------|
 | 主要族群 | JKD Studio 內部團隊或授權代理商 |
-| 職責 | 接單、審核需求、手動建立客戶站、後續交付與維運 |
-| 使用入口 | `/manage`（既有後台）新增「訂單管理」功能 |
+| 職責 | 接單、審核需求、確認付款、一鍵觸發自動開站、後續交付與維運 |
+| 使用入口 | `/platform-admin`（訂單與開站後台）、`/manage`（既有內容後台） |
 | 技術能力 | 熟悉 GitHub、Cloudflare、Workers、D1 等基礎操作 |
 
 ---
@@ -84,10 +86,16 @@
 身為平台經營者，我想要在新訂單產生時立即收到通知，以便盡快開始處理。
 
 ### US-06 審閱訂單
-身為平台經營者，我想要在 `/manage` 後台查看所有訂單明細，以便評估需求並與客戶聯繫。
+身為平台經營者，我想要在 `/platform-admin` 後台查看所有訂單明細，以便評估需求並與客戶聯繫。
 
 ### US-07 更新訂單狀態與備註
 身為平台經營者，我想要更新每筆訂單的處理狀態並記錄內部備註，以便追蹤履約進度。
+
+### US-08 在預覽頁確認並提交最終訂單
+身為客戶，我想要在 AI 生成的預覽頁面確認網站風格後，填寫期望域名與微調需求並正式提交訂單，以便進入付款與開站流程。
+
+### US-09 付款後自動開站
+身為平台經營者，我想要在確認客戶付款後，於後台一鍵觸發自動開站，讓系統自動建立客戶 repo、部署網站、綁定域名，無需手動操作 GitHub 與 Cloudflare。
 
 ---
 
@@ -135,6 +143,14 @@
 
 **描述**：將原本 `brief.txt` 的欄位轉為可視化、分步驟的表單。精靈根據所選模板在 `templates.wizard_schema` 中定義的欄位動態生成表單，所有模板共享一組基礎欄位，但可依產業擴充專屬欄位（例如中醫模板需要「醫師姓名」、「診所地址」）。客戶依序填寫後，於最後一步確認並提交。
 
+**三步驟流程**：
+
+| 步驟 | 名稱 | 說明 |
+|------|------|------|
+| 1 | WhatsApp 身份驗證 | 點按鈕開啟 WhatsApp 傳送驗證訊息；PC 用戶可掃描 QR Code；輸入 `360` 可 bypass。 |
+| 2 | 品牌資料 | 依 `wizard_schema` 填寫聯絡資訊、品牌資訊、業務內容等欄位。 |
+| 3 | 確認與送出 | AI 根據前一步答案生成專屬預覽；客戶在此輸入**期望域名**與**我想微調**，確認後提交訂單。 |
+
 **表單欄位架構**（由 `wizard_schema` 動態定義）：
 
 | 類型 | 欄位 | 必填 | 說明 |
@@ -159,28 +175,36 @@
 
 | 步驟 | 欄位 | 必填 | 說明 |
 |------|------|------|------|
-| 1. 聯絡資訊 | 聯絡人姓名 | 是 | 用於後續溝通 |
-| 1. 聯絡資訊 | 電子郵件 | 是 | 訂單確認與聯繫用 |
-| 1. 聯絡資訊 | WhatsApp / 電話 | 是 | 優先聯繫方式 |
+| 1. WhatsApp 驗證 | WhatsApp 驗證 | 是 | 點按鈕開啟 WhatsApp；輸入 `360` 可 bypass |
+| 2. 聯絡資訊 | 聯絡人姓名 | 是 | 用於後續溝通 |
+| 2. 聯絡資訊 | 電子郵件 | 是 | 訂單確認與聯繫用 |
+| 2. 聯絡資訊 | WhatsApp / 電話 | 是 | 優先聯繫方式 |
 | 2. 品牌資訊 | 行業別 | 是 | e.g. 餐飲、零售、個人品牌 |
 | 2. 品牌資訊 | 品牌名稱 | 是 | 網站顯示名稱 |
 | 2. 品牌資訊 | 品牌調性 | 是 | e.g. 溫暖、文青、專業、高端 |
 | 2. 品牌資訊 | 語言 | 是 | 預設繁體中文 |
-| 3. 業務內容 | 核心賣點 | 是 | 多行文字，可列點 |
-| 3. 業務內容 | 目標客群 | 是 | e.g. 25-45 歲上班族 |
-| 3. 業務內容 | 聯絡方式（網站使用） | 是 | e.g. WhatsApp 號碼 |
-| 3. 業務內容 | 禁用詞 | 否 | 避免 AI 使用的詞彙 |
-| 3. 業務內容 | 其他補充 | 否 | 客戶自由填寫 |
+| 2. 業務內容 | 核心賣點 | 是 | 多行文字，可列點 |
+| 2. 業務內容 | 目標客群 | 是 | e.g. 25-45 歲上班族 |
+| 2. 業務內容 | 聯絡方式（網站使用） | 是 | e.g. WhatsApp 號碼 |
+| 2. 業務內容 | 禁用詞 | 否 | 避免 AI 使用的詞彙 |
+| 2. 業務內容 | 其他補充 | 否 | 客戶自由填寫 |
+| 3. 確認與送出 | AI 生成預覽 | — | 根據填寫資料即時生成網站預覽 |
+| 3. 確認與送出 | 期望域名 | 是 | 客戶希望綁定的域名，例如 `www.mybrand.com` |
+| 3. 確認與送出 | 我想微調 | 否 | 客戶對預覽的調整需求，自然語言描述 |
+| 3. 確認與送出 | 同意條款與付款授權 | 是 | 勾選後方可提交訂單 |
 
 **驗收標準**：
 - [ ] 表單根據 `templates.wizard_schema` 動態生成，欄位順序、類型、必填狀態以 schema 為準。
 - [ ] 所有模板共享基礎欄位；專屬欄位依模板自動顯示，且不影響既有模板的填單體驗。
-- [ ] 表單分為 3 個步驟（或依 schema 分組），上方顯示進度條（Step 1 / 2 / 3）。
+- [ ] 表單分為 3 個步驟（WhatsApp 驗證 / 品牌資料 / 確認與送出），上方顯示進度條（Step 1 / 2 / 3）。
 - [ ] 每個欄位有清楚標籤與 placeholder 提示；必填欄位未填時無法進入下一步。
 - [ ] 電子郵件格式驗證；WhatsApp 號碼僅允許數字與少量符號（`+`、`-`、空格）。
 - [ ] 客戶可在每一步返回修改；表單資料自動暫存於 `localStorage`，重新整理後不清空。
-- [ ] 最後一步顯示填寫摘要，客戶確認後才提交。
-- [ ] 提交時顯示 loading 狀態，並在成功後導向 `/order-success?orderId=xxx`。
+- [ ] 第三步在客戶進入時自動呼叫 AI Worker 生成預覽，顯示 loading 與生成結果；生成失敗時提示可重試或繼續提交。
+- [ ] 第三步顯示填寫摘要、AI 預覽、**期望域名**輸入框與**我想微調**多行文字框。
+- [ ] **期望域名**必填，後端驗證格式（域名或子網域，不含協定）；重複域名需提示。
+- [ ] **我想微調**選填，字數上限 2000 字。
+- [ ] 客戶確認後才提交；提交時顯示 loading 狀態，成功後導向 `/order-success?orderId=xxx`。
 - [ ] 表單包含隱藏 honeypot 欄位，用於基礎防機器人。
 - [ ] 同一 IP 每小時最多提交 5 筆訂單（由後端 rate limiting 控制）。
 
@@ -215,6 +239,8 @@ CREATE TABLE IF NOT EXISTS templates (
   thumbnail_url TEXT,
   preview_url TEXT,
   admin_url TEXT,
+  template_type TEXT DEFAULT 'landing',  -- 模板風格/產業類別，例如 landing、clinic、portfolio
+  adapter_config TEXT,                   -- JSON：adapter 與通用中間層設定
   base_price INTEGER,
   currency TEXT DEFAULT 'HKD',
   wizard_schema TEXT NOT NULL,
@@ -241,11 +267,16 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_id INTEGER NOT NULL,
   template_id INTEGER,
   status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending','reviewing','accepted','rejected','completed','cancelled')),
+    CHECK (status IN ('pending','reviewing','accepted','paid','provisioning','completed','failed','rejected','cancelled')),
   brief_answers TEXT NOT NULL,
+  desired_domain TEXT,
+  tweak_request TEXT,
+  generated_content TEXT,
   owner_notes TEXT,
   quoted_amount INTEGER,
   currency TEXT DEFAULT 'HKD',
+  payment_status TEXT DEFAULT 'pending'
+    CHECK (payment_status IN ('pending','paid','refunded')),
   source_ip TEXT,
   user_agent TEXT,
   notification_sent_at TEXT,
@@ -272,6 +303,47 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
+
+-- 未來可選：若改由 D1 儲存每個模板實例內容，而非 static JSON
+CREATE TABLE IF NOT EXISTS template_content (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  template_id INTEGER NOT NULL,
+  content_slug TEXT NOT NULL DEFAULT 'default',
+  content_json TEXT NOT NULL,
+  version INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE CASCADE,
+  UNIQUE(template_id, content_slug)
+);
+
+-- 客戶網站表：記錄自動開站產生的客戶網站實例
+CREATE TABLE IF NOT EXISTS sites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER NOT NULL UNIQUE,
+  customer_id INTEGER NOT NULL,
+  template_id INTEGER NOT NULL,
+  repo_name TEXT NOT NULL,
+  pages_project_name TEXT,
+  pages_domain TEXT,
+  custom_domain TEXT,
+  r2_bucket_name TEXT,
+  admin_worker_url TEXT,
+  live_url TEXT,
+  status TEXT DEFAULT 'provisioning'
+    CHECK (status IN ('provisioning','live','failed','suspended','archived')),
+  provisioning_logs TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (order_id) REFERENCES orders(id),
+  FOREIGN KEY (customer_id) REFERENCES customers(id),
+  FOREIGN KEY (template_id) REFERENCES templates(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_template_content_template ON template_content(template_id);
+CREATE INDEX IF NOT EXISTS idx_sites_order ON sites(order_id);
+CREATE INDEX IF NOT EXISTS idx_sites_customer ON sites(customer_id);
+CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status);
 ```
 
 ### 4.6 經營者通知機制
@@ -285,20 +357,55 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 - [ ] 若郵件發送失敗，記錄於 Worker Logs，並將 `orders.notified_at` 留空，後續可手動重試。
 - [ ] （可選）預留 `TELEGRAM_BOT_TOKEN` 與 `TELEGRAM_CHAT_ID`，未來可擴充 Telegram 通知。
 
-### 4.7 訂單審閱後台（`/manage` 新增「訂單管理」頁籤）
+### 4.7 訂單審閱與一鍵開站後台（`/platform-admin`）
 
-**描述**：在既有 `/manage` 後台登入後，新增一個「訂單管理」區塊，讓經營者檢視、搜尋、更新訂單。
+**描述**：在 `/platform-admin` 後台（獨立於既有 `/manage` 內容後台）登入後，經營者可檢視所有訂單、復現客戶預覽、確認付款狀態，並在確認收款後觸發「一鍵開站」。
 
 **驗收標準**：
-- [ ] `/manage` 登入後，左側選單新增「訂單管理」頁籤。
-- [ ] 訂單列表顯示：訂單編號、客戶姓名、品牌名稱、模板、狀態、建立時間；可依狀態篩選。
-- [ ] 點擊訂單後顯示詳情：所有表單欄位、自動生成的 `raw_brief`、內部備註歷史。
-- [ ] 經營者可變更狀態（`pending`、`reviewing`、`accepted`、`rejected`、`completed`、`cancelled`）。
-- [ ] 經營者可編輯內部備註，備註儲存於 `orders.owner_notes`；每次狀態變更寫入 `order_events` 審計日誌。
-- [ ] 列表與詳情均支援響應式布局。
-- [ ] 後台訂單 API 端點置於 `admin-api-worker`：`GET /api/orders`、 `GET /api/orders/:id`、 `PATCH /api/orders/:id`。需驗證 JWT；未授權請求回傳 401。
+- [ ] `/platform-admin` 登入後，顯示訂單表格：訂單編號、客戶姓名、Email、WhatsApp、模板、期望域名、狀態、提交時間。
+- [ ] 點擊「查看」彈出詳情表格：聯絡資料、客戶填寫資料、期望域名、微調需求、AI 生成內容。
+- [ ] 「復現預覽」按鈕開啟 `/preview?mode=generated&publicId=...`，讓經營者查看客戶當初看到的畫面。
+- [ ] 「重新生成預覽」按鈕可用 `briefAnswers` 再跑一次 AI Worker，更新 `orders.generated_content`。
+- [ ] 經營者可變更狀態（`pending`、`reviewing`、`accepted`、`paid`、`provisioning`、`completed`、`failed`、`rejected`、`cancelled`）。
+- [ ] 在訂單狀態為 `paid` 時，顯示並啟用「一鍵開站」按鈕；`accepted` 狀態時按鈕可見但禁用，需先標記 `payment_status = paid`。
+- [ ] 點擊「一鍵開站」後，呼叫 `POST /api/orders/:id/provision`，系統自動執行開站流程。
+- [ ] 開站過程中顯示即時進度：建立 repo → 寫入 brief → AI 生成 → Pages 部署 → 綁定 domain → 完成。
+- [ ] 開站完成後，訂單狀態改為 `completed`，並顯示客戶網站連結與後台登入連結。
+- [ ] 經營者可編輯內部備註，備註儲存於 `orders.owner_notes`；每次狀態變更與開站事件寫入 `order_events` 審計日誌。
+- [ ] 後台訂單 API 端點置於 `admin-api-worker`：`GET /api/orders`、`GET /api/orders/:id`、`PATCH /api/orders/:id`、`POST /api/orders/:id/provision`。需驗證 JWT；未授權請求回傳 401。
 
-### 4.8 現有模板預覽保留（`/preview` 與 `/pre/:slug`）
+### 4.8 自動開站（Auto-Provisioning）
+
+**描述**：當經營者在 `/platform-admin` 確認客戶已付款並點擊「一鍵開站」後，系統自動執行完整開站流程，無需人工操作 GitHub 或 Cloudflare。
+
+**自動開站流程**：
+
+```text
+1. 接收指令：admin-api-worker 收到 POST /api/orders/:id/provision
+2. 權限與狀態檢查：訂單必須為 `paid`（或 `accepted` 且 `payment_status = paid`），且操作者持有有效 JWT
+3. 選擇模板：依據 orders.template_id → templates.slug 決定 Template Package
+4. 建立客戶 repo：呼叫 GitHub API「Use this template」從 twmeric/YowareTemplate 建立 repo
+   - 命名規則：yoware-<order_public_id 小寫>
+5. 寫入 brief.txt：將 brief_answers、desiredDomain、tweakRequest 轉為 brief.txt 並 commit
+6. 寫入 content.json：將 orders.generated_content（或依 tweakRequest 重新生成後）commit 到 public/data/content.json
+7. 設定 GitHub Secrets：ADMIN_PASSWORD、ADMIN_TOKEN_SECRET、GITHUB_TOKEN、DEEPSEEK_API_KEY、PIXABAY_API_KEY 等
+8. 建立 Cloudflare Pages 專案：透過 Cloudflare API 建立 project，連結新 repo
+9. 觸發首次部署：推送內容後觸發 Pages build
+10. 綁定自訂網域：將 desiredDomain 加入 Pages 專案 custom_domain，並建立 DNS 記錄
+11. 產生後台登入連結：使用 /api/generate-token 產生 7 天有效自動登入 token
+12. 發送交付通知：寄送網站連結與後台連結給客戶
+13. 回寫 sites 表：記錄 repo、pages_project、domain、live_url、status = live
+```
+
+**驗收標準**：
+- [ ] `POST /api/orders/:id/provision` 僅接受 JWT 認證，且訂單狀態為 `paid`（或 `accepted` 但已標記 `payment_status = paid`）。
+- [ ] 流程以非同步方式執行（使用 Cloudflare Durable Object 或 Queue），避免 Worker 逾時。
+- [ ] 每個步驟記錄於 `sites.provisioning_logs`，前端可輪詢進度。
+- [ ] 建立 repo、commit content、建立 Pages project、綁定 domain 任一環節失敗時，標記 `sites.status = failed` 並通知經營者。
+- [ ] 開站成功後，訂單狀態更新為 `completed`，並寄送交付郵件給客戶。
+- [ ] 客戶獲得獨立網站與 `/manage` 後台；後續大改結構/加模組在客戶 repo 進行。
+
+### 4.9 現有模板預覽保留（`/preview` 與 `/pre/:slug`）
 
 **描述**：平台首頁不再使用根路由顯示客戶模板，但模板本身的預覽仍須保留，供客戶在瀏覽與填單時參考。新模板統一走 `/pre/:slug` 動態路由；既有 `landing-v1` 保留 `/preview` 作為向後相容入口。
 
@@ -310,7 +417,7 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 - [ ] `/preview` 與 `/pre/:slug` 上方可加一條「這是模板預覽」的提示列，並提供返回平台或開始建站的連結。
 - [ ] 不影響 AI Worker 對 `public/data/content.json` 的更新流程。
 
-### 4.9 前端路由與共用版面
+### 4.10 前端路由與共用版面
 
 **描述**：引入前端路由，區分「平台頁面」、「模板預覽/後台頁面」與「既有後台/預覽頁面」。模板相關路由根據 slug 動態載入對應模板套件。
 
@@ -329,10 +436,11 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 | `/pre/:slug` | 模板前台預覽（動態載入對應 `Preview.tsx`） | 公開 |
 | `/preview` | `landing-v1` 預覽（向後相容） | 公開 |
 | `/man/:slug` | 模板後台內容編輯（動態載入對應 `Admin.tsx`） | 需密碼/JWT |
-| `/manage` | 既有後台（內容管理 + 訂單管理） | 需密碼/JWT |
+| `/manage` | 既有後台（內容管理） | 需密碼/JWT |
+| `/platform-admin` | 平台經營後台（訂單審核、付款確認、一鍵開站） | 需密碼/JWT |
 | `*` | 404 頁面 | 公開 |
 
-- [ ] `/pre/:slug` 與 `/man/:slug` 不得出現在公開導航列、Footer、Sitemap 或任何對外可見位置（根據母機守則 Rule 43）。
+- [ ] `/pre/:slug`、`/man/:slug`、`/manage`、`/platform-admin` 不得出現在公開導航列、Footer、Sitemap 或任何對外可見位置（根據母機守則 Rule 43）。
 - [ ] `/pre/:slug` 根據 slug 動態載入模板套件的 `Preview.tsx`；`/man/:slug` 根據 slug 動態載入模板套件的 `Admin.tsx`。
 - [ ] 模板套件標準目錄結構：
   - `E:\Projects\YowareTemplate\src\templates\<slug>\components\`：該模板的 section 組件。
@@ -343,13 +451,15 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 - [ ] 平台頁面使用統一的 `PlatformLayout`（含平台 header/footer），與 `/manage` 的後台風格區隔。
 - [ ] 平台 header 包含：Logo、模板、價格/方案、關於、CTA 按鈕；不得包含 `/man/:slug` 或 `/manage` 連結。
 
-### 4.10 部署與環境設定
+### 4.11 部署與環境設定
 
 **描述**：完成 Phase 1 後，須更新部署流程與相關設定檔，使平台與既有功能可同時運作。
 
 **驗收標準**：
 - [ ] 新增 `workers/platform-api-worker/wrangler.toml`，並綁定 D1 資料庫與必要環境變數。
 - [ ] 部署新 Worker：`cd workers/platform-api-worker && pnpm exec wrangler deploy`。
+- [ ] 更新 `workers/admin-api-worker/wrangler.toml`：綁定 D1、設定 `CLOUDFLARE_ACCOUNT_ID`、設定自動開站所需 secrets。
+- [ ] 設定 `admin-api-worker` secrets：`GITHUB_TOKEN`、`CLOUDFLARE_API_TOKEN`、`ADMIN_PASSWORD`、`ADMIN_TOKEN_SECRET`。
 - [ ] 建立 D1 資料庫並執行 schema migration（可使用 `wrangler d1 execute`）。
 - [ ] 於 `src/api/platform.ts` 設定 `PLATFORM_API_URL` 為新 Worker 網址。
 - [ ] 確認 Cloudflare Pages 的 `_redirects` 仍能正確將所有路由 fallback 至 `index.html`。
@@ -364,14 +474,13 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 
 以下項目**不**屬於 Phase 1 MVP，應避免在此階段實作，以免延誤上線：
 
-> 注意：「平台內建多模板」已調整為 Phase 1 目標（見 1.3、4.2、4.9）；本表中的「第三方模板市集」特指**非平台內建的第三方/external 模板上架與分潤**，仍屬未來目標。
+> 注意：「平台內建多模板」與「自動開站」已調整為 Phase 1 目標；本表中的項目為 Phase 1 之後的擴充。
 
 | 項目 | 說明 | 預計階段 |
 |------|------|----------|
-| 自動開站 / 自動佈建 | 收到訂單後自動複製 GitHub repo、建立 Pages 專案、綁定網域 | Phase 2 |
-| 客戶帳號系統 | 客戶註冊、登入、個人中心、密碼重設 | Phase 2+ |
-| 金流與訂閱 | 線上付款、發票、月費/年費方案 | Phase 3 |
-| 自訂網域與 DNS 管理 | 客戶綁定自己的網域 | Phase 2+ |
+| 客戶帳號系統 | 客戶註冊、登入、個人中心、密碼重設 | Phase 2 |
+| 線上金流閘道 | 客戶直接在網站刷卡/電子支付，無需人工對帳 | Phase 2+ |
+| 自訂網域自助綁定 | 客戶自行輸入並驗證自有網域，無需經營者介入 | Phase 2+ |
 | 多語系與 i18n | 平台與模板支援多語言切換 | Phase 2+ |
 | 第三方模板市集 | 非平台內建的第三方/external 模板上架與分潤 | Phase 3 |
 | 客戶端 CMS 編輯器 | 客戶登入後自行修改網站內容（現有 `/manage` 僅供平台經營者使用） | Phase 3 |
@@ -396,7 +505,8 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 | `TemplatePreviewShell` | 動態載入並掛載模板套件的 `Preview.tsx` | `/pre/:slug` |
 | `TemplateAdminShell` | 動態載入並掛載模板套件的 `Admin.tsx` | `/man/:slug` |
 | `NotFoundPage` | 404 插圖與返回首頁按鈕 | `*` |
-| `Admin`（既有） | 新增「訂單管理」頁籤 | `/manage` |
+| `Admin`（既有） | 內容管理後台 | `/manage` |
+| `PlatformAdminPage` | 平台經營後台：訂單表格、詳情、復現預覽、付款確認、一鍵開站 | `/platform-admin` |
 
 ### 6.2 導覽列（Header）
 
@@ -450,7 +560,7 @@ CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 
 ## 7. 成功指標（Success Metrics）
 
-Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否順暢」與「人工履約是否可被有效管理」。
+Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否順暢」與「自動開站流程是否穩定」。
 
 | 指標 | 定義 | 目標（上線後 4 週） | 測量方式 |
 |------|------|----------------------|----------|
@@ -458,9 +568,9 @@ Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否
 | 表單啟動率 | 進入 `/start/:templateId` 的訪客佔 `/templates` 訪客比例 | ≥ 15% | 前端路由 log / Analytics |
 | 訂單提交數 | 成功建立 `orders` 的筆數 | ≥ 10 筆 / 月 | D1 `orders` 表 |
 | 表單完成率 | 開始填單 → 成功提交的比例 | ≥ 30% | 前端事件 + D1 |
-| 平均履約天數 | 訂單建立 → 客戶站正式上線的天數 | ≤ 7 天 | 手動記錄於 `order_notes` |
+| 平均履約天數 | 訂單建立 → 客戶站正式上線的天數 | ≤ 1 天（經營者確認付款後 ≤ 30 分鐘） | `sites.created_at` → `sites.updated_at`（status=live） |
 | 通知延遲 | 訂單建立 → 經營者收到通知的時間 | ≤ 2 分鐘 | Worker Logs / 郵件時間戳 |
-| 後台審閱使用率 | 經營者透過 `/manage` 查看訂單的比例 | ≥ 90% | 後端存取 log |
+| 後台審閱使用率 | 經營者透過 `/platform-admin` 查看訂單的比例 | ≥ 90% | 後端存取 log |
 | 錯誤率 | API 5xx 比例 | < 1% | Cloudflare Workers Analytics |
 
 ### 7.1 回饋收集
@@ -472,31 +582,22 @@ Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否
 
 ## 8. 後續階段規劃
 
-### 8.1 Phase 2：自動開站（Auto-Provisioning）
+### 8.1 Phase 2：客戶帳號、線上付款與自助網域
 
-當 Phase 1 證明客戶願意填單、經營者願意履約後，下一步減少人工：
-
-1. **訂單確認後自動觸發開站流程**：
-   - Worker 依據 `orders.template_id` 決定要複製的倉庫或模板套件。
-   - 對於內建於主平台的模板，短期可沿用 GitHub Repository template 機制，或改由主平台分支/環境變數直接承載多模板。
-   - repo 命名規則：`client-<order-id>-<template-id>`。
-2. **自動寫入 brief**：將訂單表單轉為 `brief.txt`（或對應模板的專屬內容格式）並 commit 至新 repo。
-3. **自動設定 Webhook**：在新 repo 註冊 `ai-content-worker` webhook；AI Worker 根據 `templateSlug` 輸出對應模板可解析的內容格式。
-4. **自動建立 Cloudflare Pages 專案**：透過 Cloudflare API 建立 Pages project，綁定新 repo，設定 build command 與輸出目錄。
-5. **自動部署**：GitHub push 觸發 Pages build；AI Worker 生成對應模板的內容檔案（如 `content.json` 或模板專屬內容檔）。
-6. **交付通知**：完成後自動寄送客戶站連結與後台自動登入連結給客戶。
-
-> 多模板內容格式：Phase 2 須明確每個模板儲存內容的檔案路徑與 schema，並讓 `adapter.ts` 或 AI Worker 能將通用問卷答案轉為該格式。
-
-### 8.2 Phase 3：完整 SaaS 平台
+Phase 1 已完成「瀏覽 → 填單 → 預覽 → 付款確認 → 自動開站」的閉環。Phase 2 進一步減少經營者介入：
 
 1. **客戶帳號系統**：註冊、登入、忘記密碼、OAuth（Google）。
 2. **客戶儀表板**：查看訂單狀態、網站預覽、編輯需求、續約管理。
-3. **線上付款**：整合 Stripe / 本地金流，支援一次性與訂閱制。
-4. **自訂網域**：客戶可輸入自有網域，平台自動設定 DNS 與 SSL。
-5. **多模板市集**：上架多種風格模板，支援分類、搜尋、評價。
-6. **客戶端所見即所得編輯器**：讓客戶自行微調文字、圖片、顏色，減少客服負擔。
-7. **分析儀表板**：訪客數、熱門區塊、WhatsApp 點擊轉換。
+3. **線上付款閘道**：整合 Stripe / 本地金流，客戶可直接在平台付款，無需人工對帳。
+4. **自助網域綁定**：客戶可輸入自有網域，平台自動驗證並設定 DNS 與 SSL。
+5. **分析儀表板**：訪客數、熱門區塊、WhatsApp 點擊轉換。
+
+### 8.2 Phase 3：完整 SaaS 平台與第三方模板市集
+
+1. **多模板市集**：上架多種風格模板，支援分類、搜尋、評價、分潤。
+2. **客戶端所見即所得編輯器**：讓客戶自行微調文字、圖片、顏色，減少客服負擔。
+3. **進階分析與 A/B 測試**：轉換漏斗、熱力圖、版本測試。
+4. **訂閱與續約管理**：自動計費、到期提醒、停用流程。
 
 ---
 
@@ -506,22 +607,24 @@ Phase 1 的成功不以營收為唯一標準，而是驗證「銷售漏斗是否
 
 | 風險 | 影響 | 緩解措施 |
 |------|------|----------|
-| **Phase 1 仍為人工履約，訂單量高時無法負荷** | 客戶等待時間拉長、滿意度下降 | 明確標示「7 個工作天內交付」；訂單達上限時暫時隱藏表單或顯示「排隊中」 |
-| **客戶填寫的 brief 品質不佳，導致 AI 生成結果不滿意** | 重工、退單 | 表單加入範例提示、字數限制、必填欄位驗證；經營者審核後再觸發 AI |
+| **自動開站流程任一環節失敗（GitHub API、Cloudflare API、DNS）** | 客戶無法上線、經營者需手動補救 | 詳細記錄每步於 `sites.provisioning_logs`；失敗時通知經營者並保留已執行步驟，支援重試 |
+| **客戶填寫的 brief 品質不佳，導致 AI 生成結果不滿意** | 重工、退單 | 表單加入範例提示、字數限制、必填欄位驗證；經營者可在開站前復現/重新生成預覽 |
 | **公開訂單 API 被濫用或遭受垃圾攻擊** | D1 被灌爆、通知疲勞 | Honeypot、IP rate limiting、Email 格式驗證、必要時加上 Cloudflare Turnstile |
 | **通知郵件被歸類為垃圾信** | 經營者漏接訂單 | 使用可靠寄件服務（Resend）、設定 SPF/DKIM、同時預留 Telegram/Slack 通知 |
 | **D1 免費方案限制或效能瓶頸** | 查詢緩慢 | Phase 1 資料量小，後續可升級 D1 或遷移至 PostgreSQL |
+| **GitHub / Cloudflare API 速率限制** | 開站失敗或延遲 | 實作指數退避重試；大量開站時使用 Queue 排程 |
 | **每新增一套模板需開發專屬 adapter 與 Admin/Preview 頁面** | 模板上線週期拉長 | 建立模板套件範本與共用 UI 元件庫；優先製作 2-3 個高需求產業模板 |
 | **AI Worker 需支援多種內容格式輸出** | 生成內容與模板 schema 不匹配 | 短期由 AI 直接產出模板專屬 JSON 並驗證；長期建立通用內容中間層 + adapter 轉換機制 |
 | **動態表單欄位組合變多，驗證邏輯複雜化** | 表單提交失敗、資料不完整 | 使用共用驗證器；依 `wizard_schema` 自動產生前端與後端驗證規則 |
-| **`/manage` 後台權限外洩** | 訂單資料外洩 | 強密碼、JWT 過期、避免在 Git 提交密碼、定期輪替 `ADMIN_TOKEN_SECRET` |
+| **`/manage` 與 `/platform-admin` 後台權限外洩** | 訂單與客戶資料外洩 | 強密碼、JWT 過期、避免在 Git 提交密碼、定期輪替 `ADMIN_TOKEN_SECRET` |
 
 ### 9.2 關鍵假設
 
-- 平台經營者會每日查看通知郵件並進入 `/manage` 處理訂單。
-- 客戶願意透過表單提供足夠資訊，且能接受 Phase 1 無法即時看到最終網站。
-- 既有 `admin-api-worker` 的 JWT 機制可直接沿用於 `platform-api-worker` 的經營者查詢端點。
+- 平台經營者會每日查看通知郵件並進入 `/platform-admin` 處理訂單。
+- 客戶願意透過表單提供足夠資訊，並能在第三步即時看到 AI 生成的網站預覽。
+- 既有 `admin-api-worker` 的 JWT 機制可直接沿用於 `/platform-admin` 與自動開站端點。
 - Cloudflare D1 在 Workers 環境的讀寫延遲可接受（< 500ms）。
+- GitHub / Cloudflare API 在 Phase 1 用量範圍內不會觸發速率限制。
 - 電子郵件通知服務（Resend 等）在港台地區可穩定送達。
 
 ---
@@ -541,6 +644,8 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
   "thumbnail_url": "https://example.com/landing-v1-thumb.jpg",
   "preview_url": "/preview",
   "admin_url": "/man/landing-v1",
+  "template_type": "landing",
+  "adapter_config": "{\"adapter\":\"landing-v1\",\"outputSchema\":\"SiteContent\",\"defaultSections\":[\"hero\",\"features\",\"testimonials\",\"contact\"]}",
   "base_price": 2800,
   "currency": "HKD",
   "wizard_schema": "[{\"name\":\"brandName\",\"type\":\"text\",\"label\":\"品牌名稱\",\"required\":true},...]",
@@ -553,11 +658,12 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 欄位補充說明：
 
 - `preview_url`：對客戶公開的預覽入口。`landing-v1` 保留 `/preview`；新模板建議使用 `/pre/:slug`。
-- `admin_url`：平台經營者進入模板內容編輯的入口，例如 `/man/landing-v1`。此欄位不對外公開。
+- `admin_url`：平台經營者或 demo 用戶進入模板內容編輯的入口，例如 `/man/landing-v1`。後台頁面本身受密碼/JWT 保護，因此 `admin_url` 可隨模板列表一併公開回傳，供平台頁面顯示「體驗後台」按鈕（根據母機守則 Rule 43，此按鈕不得出現在公開導航，僅出現在模板卡片內的 demo 操作區）。
+- `template_type`：用於區分模板風格或產業類別（如 `landing`、`clinic`、`portfolio`），供 Template Registry 選擇預設元件與渲染邏輯。
+- `adapter_config`：JSON，記錄該模板 adapter 的額外參數（如欄位映射、輸出檔案路徑、預設 section 列表）。
 - 未來可能擴充：
-  - `template_type`：用於區分模板風格或產業類別（如 `landing`、`clinic`、`portfolio`），供動態載入器選擇元件。
-  - `adapter_config`：JSON，記錄該模板 adapter 的額外參數（如欄位映射、輸出檔案路徑）。
   - `demo_content_path`：模板預設 demo 內容的路徑，例如 `E:\Projects\YowareTemplate\src\templates\tcm-v1\demo-content.json`。
+  - `template_content` 表：若需要多實例、版本控制或即時編輯，可將內容從 static JSON 遷移至 D1。
 
 ### A.2 `customers` 表
 
@@ -568,13 +674,19 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 
 - `public_id` 建議格式：`YWT-{YYYYMMDD}-{4位亂數}`，例如 `YWT-20250717-A3K9`，用於對外溝通與查詢。
 - `brief_answers` 儲存客戶填寫的原始表單答案（JSON）。
-- `raw_brief`（未來 Phase 2 欄位）可由 `brief_answers` 自動生成，格式與現有 `brief.txt` 一致，方便直接寫入新 repo。
+- `desired_domain`：客戶期望綁定的域名（例如 `www.sunrisebrew.hk`）。
+- `tweak_request`：客戶對 AI 預覽的調整需求，自然語言描述。
+- `generated_content`：AI 在精靈第三步生成的預覽內容（JSON），用於復現預覽與開站時寫入 repo。
+- `payment_status`：`pending` / `paid` / `refunded`，Phase 1 由經營者手動標記。
 - `status` 的狀態流：
   - `pending`：剛提交，等待審核。
   - `reviewing`：經營者已查看，評估中。
-  - `accepted`：已接受並準備進入製作。
+  - `accepted`：已接受，等待付款。
+  - `paid`：已確認付款，可執行一鍵開站。
+  - `provisioning`：自動開站進行中。
+  - `completed`：開站完成，客戶網站已上線。
+  - `failed`：開站失敗，需人工介入。
   - `rejected`：已拒絕。
-  - `completed`：已交付完成。
   - `cancelled`：已取消。
 
 ### A.4 `order_events` 表
@@ -590,31 +702,35 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 
 #### `GET /api/templates`
 
-回傳模板清單。公開回應**不包含** `admin_url`。
+回傳模板清單。公開回應包含 `admin_url`，因為後台頁面本身受密碼/JWT 保護，平台頁面需要顯示「體驗後台」demo 入口。
 
 ```json
 {
   "success": true,
   "data": [
     {
-      "id": "landing-v1",
       "slug": "landing-v1",
       "name": "日式簡約 Landing Page v1",
-      "thumbnail_url": "...",
-      "preview_url": "/preview",
-      "price_text": "HKD 2,800 起",
-      "industries": ["餐飲", "零售", "生活館", "個人品牌"],
-      "template_type": "landing"
+      "description": "適合餐飲、食材、精品零售、生活館與個人品牌的單頁式網站。",
+      "thumbnailUrl": "...",
+      "previewUrl": "/preview",
+      "adminUrl": "/man/landing-v1",
+      "templateType": "landing",
+      "basePrice": 2800,
+      "currency": "HKD",
+      "isFeatured": true
     },
     {
-      "id": "tcm-v1",
       "slug": "tcm-v1",
       "name": "明德中醫 TCM Clinic v1",
-      "thumbnail_url": "...",
-      "preview_url": "/pre/tcm-v1",
-      "price_text": "HKD 3,200 起",
-      "industries": ["醫療", "中醫", "診所"],
-      "template_type": "clinic"
+      "description": "專業中醫診所風格，適合醫療與健康服務。",
+      "thumbnailUrl": "...",
+      "previewUrl": "/pre/tcm-v1",
+      "adminUrl": "/man/tcm-v1",
+      "templateType": "clinic",
+      "basePrice": 3200,
+      "currency": "HKD",
+      "isFeatured": false
     }
   ]
 }
@@ -622,7 +738,7 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 
 #### `GET /api/templates/:slug`
 
-回傳單一模板完整資訊（含 `wizard_schema`、`preview_url`）。公開回應**不包含** `admin_url`。
+回傳單一模板完整資訊（含 `wizard_schema`、`previewUrl`、`adminUrl`、`templateType`）。
 
 回傳範例：
 
@@ -630,17 +746,16 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 {
   "success": true,
   "data": {
-    "id": "tcm-v1",
     "slug": "tcm-v1",
     "name": "明德中醫 TCM Clinic v1",
     "description": "適合中醫診所、養生館的專業模板。",
-    "thumbnail_url": "...",
-    "preview_url": "/pre/tcm-v1",
-    "base_price": 3200,
+    "thumbnailUrl": "...",
+    "previewUrl": "/pre/tcm-v1",
+    "adminUrl": "/man/tcm-v1",
+    "templateType": "clinic",
+    "basePrice": 3200,
     "currency": "HKD",
-    "industries": ["醫療", "中醫", "診所"],
-    "template_type": "clinic",
-    "wizard_schema": [
+    "wizardSchema": [
       { "name": "brandName", "type": "text", "label": "品牌名稱", "required": true },
       { "name": "physicianName", "type": "text", "label": "醫師姓名", "required": true }
     ]
@@ -677,6 +792,9 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
     "forbiddenWords": "",
     "additionalNotes": "希望首圖有陽光感。"
   },
+  "desiredDomain": "www.sunrisebrew.hk",
+  "tweakRequest": "希望 Hero 區使用深綠色背景，服務項目改為三個並加上價格",
+  "generatedContent": { "hero": { "title": "..." }, "features": [...] },
   "metadata": {
     "utmSource": "homepage"
   },
@@ -722,10 +840,31 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 
 ```json
 {
-  "status": "accepted",
-  "ownerNotes": "已聯繫客戶，確認品牌色為綠色。"
+  "status": "paid",
+  "ownerNotes": "已收到銀行轉帳，準備開站。"
 }
 ```
+
+#### `POST /api/orders/:id/provision`
+
+觸發自動開站。訂單必須為 `paid` 狀態，且操作者持有有效 JWT。
+
+回傳：
+
+```json
+{
+  "success": true,
+  "data": {
+    "siteId": 1,
+    "status": "provisioning",
+    "message": "已開始自動開站，請稍後刷新查看進度。"
+  }
+}
+```
+
+#### `GET /api/orders/:id/provision`
+
+查詢自動開站進度，回傳 `sites` 記錄與 `provisioning_logs`。
 
 ---
 
@@ -745,7 +884,22 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 | `RATE_LIMIT_PER_HOUR` | Plain | 每 IP 每小時最多提交次數，預設 5 |
 | `DB` | Binding | Cloudflare D1 資料庫綁定 |
 
-### C.2 前端 `src/api/platform.ts`
+### C.2 `workers/admin-api-worker`（擴充自動開站）
+
+| 變數 | 類型 | 說明 |
+|------|------|------|
+| `ADMIN_PASSWORD` | Secret | `/manage` 與 `/platform-admin` 登入密碼 |
+| `ADMIN_TOKEN_SECRET` | Secret | 簽署 JWT |
+| `GITHUB_TOKEN` | Secret | 讀寫 GitHub repo、建立新 repo |
+| `CLOUDFLARE_API_TOKEN` | Secret | 建立 Pages project、綁定 domain、管理 DNS |
+| `CLOUDFLARE_ACCOUNT_ID` | Plain | Cloudflare 帳號 ID |
+| `DEEPSEEK_API_KEY` | Secret | AI Worker 呼叫 DeepSeek（開站時重新生成內容用） |
+| `PIXABAY_API_KEY` | Secret | AI Worker 搜尋圖片 |
+| `GITHUB_WEBHOOK_SECRET` | Secret（建議） | 驗證 GitHub webhook 簽章 |
+| `DB` | Binding | Cloudflare D1 資料庫綁定 |
+| `MEDIA_BUCKET` | Binding | R2 媒體庫 |
+
+### C.3 前端 `src/api/platform.ts`
 
 | 變數 | 說明 |
 |------|------|
@@ -762,12 +916,17 @@ Phase 1 至少包含 `landing-v1`，並預留擴充至其他內建模板（如 `
 - [ ] 新增 `src/layouts/PlatformLayout.tsx` 與 `src/api/platform.ts`。
 - [ ] 新增 `workers/platform-api-worker/` 並完成 D1 schema migration。
 - [ ] 於 `admin-api-worker` 的 JWT 簽發邏輯確認可被 `platform-api-worker` 共用（或複製必要程式碼）。
-- [ ] 於 `src/pages/Admin.tsx` 新增「訂單管理」頁籤與對應子元件。
+- [ ] 於 `src/pages/platform/PlatformAdminPage.tsx` 實作訂單表格、詳情、復現預覽、付款確認與「一鍵開站」按鈕。
+- [ ] 於 `admin-api-worker` 實作 `POST /api/orders/:id/provision` 與 `GET /api/orders/:id/provision`。
+- [ ] 於 `admin-api-worker` 實作自動開站 orchestrator：GitHub repo 建立、brief/content commit、Pages project 建立、domain 綁定。
+- [ ] 更新 D1 schema：orders 表新增 `desired_domain`、`tweak_request`、`generated_content`、`payment_status`；新增 `sites` 表。
+- [ ] 設定 `admin-api-worker` secrets：`GITHUB_TOKEN`、`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。
+- [ ] 更新 `src/pages/platform/StartWizardPage.tsx`：第三步加入 AI 預覽、期望域名、我想微調欄位。
 - [ ] 更新 `index.html` title 與 lang 屬性。
 - [ ] 更新 `public/_redirects`（如需要）。
 - [ ] 撰寫 `docs/04-platform-deployment.md`。
 - [ ] 在本地端以 `pnpm run dev` 測試所有路由。
-- [ ] 部署新 Worker 與 Pages，驗證訂單提交與通知。
+- [ ] 部署新 Worker 與 Pages，驗證訂單提交、通知與一鍵開站。
 
 ---
 

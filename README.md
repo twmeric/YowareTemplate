@@ -78,14 +78,25 @@ brief.txt → DeepSeek AI → Pixabay 圖片 → public/data/content.json → Cl
 
 ## 多模板支援
 
-平台現已支援多模板。模板資料與預覽/後台網址均儲存在 D1 `templates` 表中：
+平台採用統一內建模板架構：所有模板均為平台內建的「模板套件」，註冊於 D1 `templates` 表，並透過 Template Registry 根據 `slug` 動態載入對應的 `Preview.tsx` 與 `Admin.tsx`。
 
 | 模板 | 類型 | 前台預覽 | 後台管理 |
 |------|------|----------|----------|
-| `landing-v1` | 平台內建 Landing Page | `/pre/landing-v1` | `/man/landing-v1` |
-| `tcm-v1` | 外部中醫診所模板 | `https://yowaretemplate-tcm.pages.dev` | `https://yowaretemplate-tcm.pages.dev/admin` |
+| `landing-v1` | 平台內建 Landing Page | `/preview`（向後相容）/ `/pre/landing-v1` | `/man/landing-v1` |
+| `tcm-v1` | 平台內建中醫診所模板 | `/pre/tcm-v1` | `/man/tcm-v1` |
 
-第二套模板原始碼位於 `templates/cf-spa-kv-cms/`，需獨立部署為 Cloudflare Pages 專案。詳見 `templates/cf-spa-kv-cms/DEPLOY.md`。
+模板套件標準結構（以 `tcm-v1` 為例）：
+
+```
+src/templates/tcm-v1/
+  components/       # 該模板的 section 組件
+  schema.ts         # 內容型別定義
+  adapter.ts        # 通用問卷 → 模板內容轉換
+  Preview.tsx       # 前台預覽頁面
+  Admin.tsx         # 後台內容編輯頁面
+```
+
+第二套模板原始碼暫存於 `templates/cf-spa-kv-cms/`，後續將逐步移植為 `src/templates/tcm-v1/` 內建套件。移植期間仍可參考 `templates/cf-spa-kv-cms/DEPLOY.md` 了解其原始設計。
 
 新增模板時，請在 `workers/platform-api-worker/migrations/` 新增 migration，並執行：
 
@@ -110,7 +121,10 @@ src/
   types/            TypeScript 內容型別
   App.tsx           單頁應用入口
 templates/
-  cf-spa-kv-cms/    第二套中醫診所模板（獨立 Pages 專案）
+  cf-spa-kv-cms/    第二套中醫診所模板原始碼（待移植為內建套件）
+src/templates/
+  landing-v1/       內建 Landing Page 模板套件
+  tcm-v1/           內建中醫診所模板套件（規劃中）
 workers/
   admin-api-worker/    自訂後台 API（所有站共用）
   ai-content-worker/   DeepSeek + Pixabay 內容生成 Worker

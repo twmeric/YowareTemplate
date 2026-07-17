@@ -355,6 +355,7 @@ function templateListRow(row: Record<string, unknown>) {
     thumbnailUrl: row.thumbnail_url,
     previewUrl: row.preview_url,
     adminUrl: row.admin_url,
+    templateType: row.template_type,
     basePrice: row.base_price,
     currency: row.currency,
     isFeatured: row.is_featured === 1,
@@ -363,10 +364,16 @@ function templateListRow(row: Record<string, unknown>) {
 
 function templateDetailRow(row: Record<string, unknown>) {
   let wizardSchema: unknown = [];
+  let adapterConfig: unknown = null;
   try {
     wizardSchema = JSON.parse(row.wizard_schema as string);
   } catch {
     wizardSchema = [];
+  }
+  try {
+    adapterConfig = JSON.parse(row.adapter_config as string);
+  } catch {
+    adapterConfig = null;
   }
 
   return {
@@ -376,6 +383,8 @@ function templateDetailRow(row: Record<string, unknown>) {
     thumbnailUrl: row.thumbnail_url,
     previewUrl: row.preview_url,
     adminUrl: row.admin_url,
+    templateType: row.template_type,
+    adapterConfig,
     basePrice: row.base_price,
     currency: row.currency,
     wizardSchema,
