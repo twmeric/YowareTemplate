@@ -272,17 +272,16 @@ Response:
 
 ## 4. 通知（平台 Worker 內）
 
-訂單建立後，呼叫 Resend API 發送郵件給 `OWNER_EMAIL`。
+訂單建立後，呼叫 CloudWapi API 發送 WhatsApp 訊息給平台主理人。參考 MotherBase 規則 25：必須使用 GET + `encodeURIComponent()` 編碼中文，否則會出現亂碼。
 
 必要 secrets:
-- `OWNER_EMAIL`（例如 `owner@example.com`）
-- `EMAIL_API_KEY`（Resend API key）
-- `FROM_EMAIL`（例如 `noreply@yowaretemplate.pages.dev`）
+- `CLOUDWAPI_API_KEY`
+- `CLOUDWAPI_SENDER`（已登入 WhatsApp 的發送號碼，國際格式如 `85262322466`）
+- `CLOUDWAPI_RECEIVER`（接收通知的號碼；可選，未設定時預設等於 `CLOUDWAPI_SENDER`）
 
-郵件內容：
-- Subject: `[新訂單] YWT-20250717-A3K9 - 日出咖啡 Sunrise Brew`
-- Body HTML 包含：訂單編號、模板名稱、客戶姓名/Email/WhatsApp、品牌名稱、需求摘要、管理連結 `https://yowaretemplate.pages.dev/manage/orders`
-- 發送成功後更新 `orders.notification_sent_at` 並寫入 `order_events`（`event='notified'`）。
+訊息內容包含：訂單編號、模板名稱、客戶姓名/Email/WhatsApp、品牌名稱、需求摘要、管理連結 `https://yowaretemplate.pages.dev/manage/orders`。
+
+- 發送成功後更新 `orders.notification_sent_at` 並寫入 `order_events`（`event='notified'`，`payload={channel:'whatsapp'}`）。
 - 發送失敗記錄 Worker Logs，`notification_sent_at` 留空。
 
 ## 5. 前端 API Client
