@@ -12,6 +12,22 @@ export default {
           green: '#2D4A22',
           red: '#C94A47',
           text: '#333333',
+        },
+        jkd: {
+          black: '#0A0A0A',
+          'black-900': '#111111',
+          'black-800': '#1A1A1A',
+          'black-700': '#222222',
+          gold: '#D4AF37',
+          'gold-light': '#F0D878',
+          'gold-dark': '#B8960C',
+          gray: {
+            100: '#E5E5E5',
+            200: '#A3A3A3',
+            300: '#737373',
+            400: '#404040',
+          },
+          white: '#FFFFFF',
         }
       },
       // Mobile-first screen sizes

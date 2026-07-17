@@ -269,87 +269,87 @@ const StartWizardPage: React.FC = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            聯絡人姓名 <span className="text-brand-red">*</span>
+          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
+            聯絡人姓名 <span className="text-jkd-gold">*</span>
           </label>
           <input
             type="text"
             value={data.name}
             onChange={(e) => updateData({ name: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="例如：王小明"
           />
           {fieldErrors.name && (
-            <p className="mt-1 text-sm text-brand-red flex items-center gap-1">
+            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
               <AlertCircle className="w-4 h-4" /> {fieldErrors.name}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            電子郵件 <span className="text-brand-red">*</span>
+          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
+            電子郵件 <span className="text-jkd-gold">*</span>
           </label>
           <input
             type="email"
             value={data.email}
             onChange={(e) => updateData({ email: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="ming@example.com"
           />
           {fieldErrors.email && (
-            <p className="mt-1 text-sm text-brand-red flex items-center gap-1">
+            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
               <AlertCircle className="w-4 h-4" /> {fieldErrors.email}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            聯絡電話 <span className="text-brand-red">*</span>
+          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
+            聯絡電話 <span className="text-jkd-gold">*</span>
           </label>
           <input
             type="tel"
             value={data.phone}
             onChange={(e) => updateData({ phone: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="+852 9876 5432"
           />
           {fieldErrors.phone && (
-            <p className="mt-1 text-sm text-brand-red flex items-center gap-1">
+            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
               <AlertCircle className="w-4 h-4" /> {fieldErrors.phone}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
             WhatsApp 號碼
           </label>
           <input
             type="tel"
             value={data.whatsapp}
             onChange={(e) => updateData({ whatsapp: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="85298765432"
           />
           {fieldErrors.whatsapp && (
-            <p className="mt-1 text-sm text-brand-red flex items-center gap-1">
+            <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
               <AlertCircle className="w-4 h-4" /> {fieldErrors.whatsapp}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            偏好聯絡方式 <span className="text-brand-red">*</span>
+          <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
+            偏好聯絡方式 <span className="text-jkd-gold">*</span>
           </label>
           <select
             value={data.preferredContact}
             onChange={(e) =>
               updateData({ preferredContact: e.target.value as PreferredContact })
             }
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green bg-white"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800"
           >
             <option value="email">電子郵件</option>
             <option value="phone">電話</option>
@@ -376,9 +376,9 @@ const StartWizardPage: React.FC = () => {
     if (!meta) return null;
 
     const label = (
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-jkd-gray-200 mb-1">
         {meta.label}
-        {meta.required && <span className="text-brand-red ml-1">*</span>}
+        {meta.required && <span className="text-jkd-gold ml-1">*</span>}
       </label>
     );
 
@@ -392,14 +392,14 @@ const StartWizardPage: React.FC = () => {
             type="text"
             value={data.answers[name] || ""}
             onChange={(e) => updateAnswer(name, e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold"
             placeholder="例如：餐飲、零售、服務"
           />
         ) : name === "language" ? (
           <select
             value={data.answers[name] || ""}
             onChange={(e) => updateAnswer(name, e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green bg-white"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold bg-jkd-black-800"
           >
             <option value="">請選擇</option>
             <option value="繁體中文">繁體中文</option>
@@ -411,12 +411,12 @@ const StartWizardPage: React.FC = () => {
           <textarea
             value={data.answers[name] || ""}
             onChange={(e) => updateAnswer(name, e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-green h-28"
+            className="w-full px-4 py-3 border border-jkd-gray-400/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-jkd-gold h-28"
             placeholder={`請輸入${meta.label}`}
           />
         )}
         {error && (
-          <p className="mt-1 text-sm text-brand-red flex items-center gap-1">
+          <p className="mt-1 text-sm text-jkd-gold flex items-center gap-1">
             <AlertCircle className="w-4 h-4" /> {error}
           </p>
         )}
@@ -426,23 +426,23 @@ const StartWizardPage: React.FC = () => {
 
   const renderReviewStep = () => (
     <div className="space-y-6">
-      <div className="bg-brand-bg rounded-xl p-6">
-        <h3 className="text-lg font-bold text-brand-green mb-4">聯絡資料</h3>
+      <div className="bg-jkd-black-800 rounded-xl p-6">
+        <h3 className="text-lg font-bold text-jkd-gold mb-4">聯絡資料</h3>
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <dt className="text-gray-500">姓名</dt>
+            <dt className="text-jkd-gray-300">姓名</dt>
             <dd className="font-medium">{data.name}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">電子郵件</dt>
+            <dt className="text-jkd-gray-300">電子郵件</dt>
             <dd className="font-medium">{data.email}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">電話</dt>
+            <dt className="text-jkd-gray-300">電話</dt>
             <dd className="font-medium">{data.phone}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">偏好聯絡方式</dt>
+            <dt className="text-jkd-gray-300">偏好聯絡方式</dt>
             <dd className="font-medium">
               {data.preferredContact === "email" && "電子郵件"}
               {data.preferredContact === "phone" && "電話"}
@@ -451,7 +451,7 @@ const StartWizardPage: React.FC = () => {
           </div>
           {data.whatsapp && (
             <div>
-              <dt className="text-gray-500">WhatsApp</dt>
+              <dt className="text-jkd-gray-300">WhatsApp</dt>
               <dd className="font-medium">{data.whatsapp}</dd>
             </div>
           )}
@@ -459,14 +459,14 @@ const StartWizardPage: React.FC = () => {
       </div>
 
       {visibleStep2Fields.length > 0 && (
-        <div className="bg-brand-bg rounded-xl p-6">
-          <h3 className="text-lg font-bold text-brand-green mb-4">品牌資訊</h3>
+        <div className="bg-jkd-black-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-jkd-gold mb-4">品牌資訊</h3>
           <dl className="space-y-3 text-sm">
             {visibleStep2Fields.map((name) => {
               const meta = schemaMap.get(name);
               return (
                 <div key={name}>
-                  <dt className="text-gray-500">{meta?.label}</dt>
+                  <dt className="text-jkd-gray-300">{meta?.label}</dt>
                   <dd className="font-medium whitespace-pre-wrap">
                     {data.answers[name] || "—"}
                   </dd>
@@ -478,14 +478,14 @@ const StartWizardPage: React.FC = () => {
       )}
 
       {visibleStep3Fields.length > 0 && (
-        <div className="bg-brand-bg rounded-xl p-6">
-          <h3 className="text-lg font-bold text-brand-green mb-4">業務內容</h3>
+        <div className="bg-jkd-black-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-jkd-gold mb-4">業務內容</h3>
           <dl className="space-y-3 text-sm">
             {visibleStep3Fields.map((name) => {
               const meta = schemaMap.get(name);
               return (
                 <div key={name}>
-                  <dt className="text-gray-500">{meta?.label}</dt>
+                  <dt className="text-jkd-gray-300">{meta?.label}</dt>
                   <dd className="font-medium whitespace-pre-wrap">
                     {data.answers[name] || "—"}
                   </dd>
@@ -544,14 +544,14 @@ const StartWizardPage: React.FC = () => {
       <section className="py-12 md:py-20">
         <div className="container mx-auto px-4 max-w-3xl">
           {loading && (
-            <div className="flex flex-col items-center justify-center py-20 text-brand-green">
+            <div className="flex flex-col items-center justify-center py-20 text-jkd-gold">
               <Loader2 className="w-10 h-10 animate-spin mb-4" />
-              <p className="text-gray-600">載入中...</p>
+              <p className="text-jkd-gray-300">載入中...</p>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 text-red-700 rounded-xl p-6 text-center">
+            <div className="bg-red-500/10 text-red-400 rounded-xl p-6 text-center">
               <p className="font-bold mb-2">無法載入模板</p>
               <p className="text-sm">{error}</p>
             </div>
@@ -560,10 +560,10 @@ const StartWizardPage: React.FC = () => {
           {!loading && !error && template && (
             <>
               <div className="text-center mb-10">
-                <h1 className="text-3xl md:text-4xl font-bold text-brand-green mb-3">
+                <h1 className="text-3xl md:text-4xl font-bold text-jkd-gold mb-3">
                   開始製作：{template.name}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-jkd-gray-300">
                   填寫以下資料，我們將依此為您客製化網站。
                 </p>
               </div>
@@ -580,10 +580,10 @@ const StartWizardPage: React.FC = () => {
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
                             completed
-                              ? "bg-brand-green text-white"
+                              ? "bg-jkd-gold text-white"
                               : active
-                              ? "bg-brand-green text-white ring-4 ring-brand-green/20"
-                              : "bg-gray-200 text-gray-500"
+                              ? "bg-jkd-gold text-white ring-4 ring-jkd-gold/20"
+                              : "bg-jkd-gray-400 text-jkd-gray-300"
                           }`}
                         >
                           {completed ? (
@@ -594,7 +594,7 @@ const StartWizardPage: React.FC = () => {
                         </div>
                         <span
                           className={`text-xs mt-2 hidden sm:block ${
-                            active ? "text-brand-green font-medium" : "text-gray-500"
+                            active ? "text-jkd-gold font-medium" : "text-jkd-gray-300"
                           }`}
                         >
                           {stepTitles[idx]}
@@ -603,23 +603,23 @@ const StartWizardPage: React.FC = () => {
                     );
                   })}
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-jkd-gray-400 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-brand-green transition-all duration-300"
+                    className="h-full bg-jkd-gold transition-all duration-300"
                     style={{ width: `${((step - 1) / (totalSteps - 1)) * 100}%` }}
                   ></div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-10">
-                <h2 className="text-xl font-bold text-brand-green mb-6">
+              <div className="bg-jkd-black-800 rounded-2xl shadow-sm border border-jkd-gray-400/20 p-6 md:p-10">
+                <h2 className="text-xl font-bold text-jkd-gold mb-6">
                   {stepTitles[step - 1]}
                 </h2>
 
                 {renderStepContent()}
 
                 {submitError && (
-                  <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-start gap-2">
+                  <div className="mt-6 p-4 bg-red-500/10 text-red-400 rounded-lg flex items-start gap-2">
                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold">提交失敗</p>
@@ -633,7 +633,7 @@ const StartWizardPage: React.FC = () => {
                     <button
                       onClick={handleBack}
                       disabled={submitting}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="px-6 py-3 border border-gray-300 text-jkd-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <ArrowLeft className="w-4 h-4" /> 上一步
                     </button>
@@ -644,7 +644,7 @@ const StartWizardPage: React.FC = () => {
                   {step < totalSteps ? (
                     <button
                       onClick={handleNext}
-                      className="px-6 py-3 bg-brand-green text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2"
+                      className="px-6 py-3 bg-jkd-gold text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2"
                     >
                       下一步 <ArrowRight className="w-4 h-4" />
                     </button>

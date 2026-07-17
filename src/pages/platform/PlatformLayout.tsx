@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LayoutTemplate, Home, Eye } from "lucide-react";
-import { useContent } from "../../hooks/useContent";
 
 interface PlatformLayoutProps {
   children: React.ReactNode;
 }
 
+const BRAND_NAME = "JKDWebsite";
+const BRAND_LOGO = "JKD";
+
 const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
-  const { content } = useContent();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -24,19 +25,14 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
   }, [location.pathname]);
 
   useEffect(() => {
-    const brandName = content.brand?.name || "YowareTemplate";
     const routeTitles: Record<string, string> = {
       "/": "首頁",
       "/templates": "模板市集",
       "/preview": "預覽範例",
     };
     const routeTitle = routeTitles[location.pathname] || "";
-    document.title = routeTitle ? `${brandName} - ${routeTitle}` : brandName;
-  }, [location.pathname, content.brand?.name]);
-
-  const brandName = content.brand?.name || "YowareTemplate";
-  const brandLogo = content.brand?.logo || "Y";
-  const brandLogoImage = content.brand?.logoImage;
+    document.title = routeTitle ? `${BRAND_NAME} - ${routeTitle}` : BRAND_NAME;
+  }, [location.pathname]);
 
   const navLinks = [
     { to: "/", label: "首頁", icon: Home },
@@ -50,27 +46,21 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text font-sans selection:bg-brand-green selection:text-white flex flex-col">
+    <div className="min-h-screen bg-jkd-black text-jkd-gray-100 font-sans selection:bg-jkd-gold selection:text-jkd-black flex flex-col">
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
+          scrolled
+            ? "bg-jkd-black-900/95 backdrop-blur-md border-jkd-gray-400/30 py-3"
+            : "bg-transparent border-transparent py-5"
         }`}
       >
         <div className="container mx-auto px-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            {brandLogoImage ? (
-              <img
-                src={brandLogoImage}
-                alt={brandName}
-                className="h-10 w-auto object-contain"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-xl">
-                {brandLogo}
-              </div>
-            )}
-            <span className="text-xl font-bold tracking-tight text-brand-green">
-              {brandName}
+          <Link to="/" className="flex items-center gap-3">
+            <div className="h-10 px-3 bg-jkd-gold rounded-lg flex items-center justify-center text-jkd-black font-black text-sm tracking-tight">
+              {BRAND_LOGO}
+            </div>
+            <span className="text-xl font-bold tracking-tight text-jkd-white">
+              {BRAND_NAME}
             </span>
           </Link>
 
@@ -81,8 +71,8 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
                 to={link.to}
                 className={`text-sm font-medium transition-colors ${
                   isActive(link.to)
-                    ? "text-brand-red"
-                    : "hover:text-brand-red"
+                    ? "text-jkd-gold"
+                    : "text-jkd-gray-200 hover:text-jkd-gold"
                 }`}
               >
                 {link.label}
@@ -94,6 +84,7 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label={isMenuOpen ? "關閉選單" : "開啟選單"}
+              className="text-jkd-white"
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -105,7 +96,7 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-xl">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-jkd-black-900 border-t border-jkd-gray-400/30 shadow-xl">
             <nav className="flex flex-col p-4 gap-4">
               {navLinks.map((link) => {
                 const Icon = link.icon;
@@ -113,8 +104,8 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`flex items-center gap-3 py-2 text-lg font-medium border-b border-gray-50 last:border-0 ${
-                      isActive(link.to) ? "text-brand-red" : ""
+                    className={`flex items-center gap-3 py-2 text-lg font-medium border-b border-jkd-gray-400/20 last:border-0 ${
+                      isActive(link.to) ? "text-jkd-gold" : "text-jkd-gray-100"
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -129,40 +120,32 @@ const PlatformLayout: React.FC<PlatformLayoutProps> = ({ children }) => {
 
       <main className="flex-1 pt-20 md:pt-24">{children}</main>
 
-      <footer className="bg-white py-10 border-t border-gray-100">
+      <footer className="bg-jkd-black-900 border-t border-jkd-gray-400/20 py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              {brandLogoImage ? (
-                <img
-                  src={brandLogoImage}
-                  alt={brandName}
-                  className="h-8 w-auto object-contain"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {brandLogo}
-                </div>
-              )}
-              <span className="text-lg font-bold text-brand-green">
-                {brandName}
+            <div className="flex items-center gap-3">
+              <div className="h-8 px-2.5 bg-jkd-gold rounded-lg flex items-center justify-center text-jkd-black font-black text-xs tracking-tight">
+                {BRAND_LOGO}
+              </div>
+              <span className="text-lg font-bold text-jkd-white">
+                {BRAND_NAME}
               </span>
             </div>
 
-            <nav className="flex items-center gap-6 text-sm text-gray-500">
+            <nav className="flex items-center gap-6 text-sm text-jkd-gray-300">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="hover:text-brand-green transition-colors"
+                  className="hover:text-jkd-gold transition-colors"
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} {brandName}. All rights reserved.
+            <p className="text-jkd-gray-300 text-sm">
+              © {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.
             </p>
           </div>
         </div>
