@@ -346,6 +346,7 @@ const StartWizardPage: React.FC = () => {
           preferredContact: data.preferredContact,
         },
         answers: data.answers,
+        generatedContent: generated.content as Record<string, unknown>,
         honeypot: data.honeypot,
       });
 

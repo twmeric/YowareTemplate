@@ -7,8 +7,10 @@ import {
   Eye,
   RefreshCw,
   LogOut,
+  ExternalLink,
 } from "lucide-react";
-import { PlatformAPIError } from "../../api/platform";
+import { useNavigate } from "react-router-dom";
+import { getAdminOrder } from "../../api/platform";
 
 const API_URL =
   import.meta.env.VITE_PLATFORM_API_URL ||
@@ -24,6 +26,13 @@ interface Order {
   customerWhatsapp?: string;
   createdAt: string;
   briefAnswers?: Record<string, unknown>;
+  generatedContent?: Record<string, unknown>;
+}
+
+interface OrderDetail extends Order {
+  updatedAt: string;
+  sourceIp?: string;
+  notificationSentAt?: string;
 }
 
 async function adminLogin(password: string): Promise<string> {
@@ -61,12 +70,14 @@ async function fetchOrders(token: string): Promise<Order[]> {
 
 const PlatformAdminPage: React.FC = () => {
   document.title = "平台管理後台";
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(localStorage.getItem("jkd_platform_admin_token"));
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const loadOrders = async (t: string) => {
     setLoading(true);
@@ -110,6 +121,29 @@ const PlatformAdminPage: React.FC = () => {
     setToken(null);
     setOrders([]);
     setSelectedOrder(null);
+  };
+
+  const handleViewOrder = async (order: Order) => {
+    if (!token) return;
+    setDetailLoading(true);
+    setError(null);
+    try {
+      const detail = await getAdminOrder(token, order.publicId) as OrderDetail;
+      setSelectedOrder(detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "載入詳情失敗");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleRebuildPreview = (order: OrderDetail) => {
+    if (!order.generatedContent) {
+      setError("此訂單沒有儲存生成的預覽內容，無法復現");
+      return;
+    }
+    localStorage.setItem("yoware_generated_content", JSON.stringify(order.generatedContent));
+    window.open(`/preview?mode=generated&publicId=${order.publicId}`, "_blank");
   };
 
   if (!token) {
@@ -237,8 +271,9 @@ const PlatformAdminPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4">
                           <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="inline-flex items-center gap-1 text-jkd-gold hover:text-jkd-gold-light transition-colors"
+                            onClick={() => handleViewOrder(order)}
+                            disabled={detailLoading}
+                            className="inline-flex items-center gap-1 text-jkd-gold hover:text-jkd-gold-light transition-colors disabled:opacity-50"
                           >
                             <Eye className="w-4 h-4" /> 查看
                           </button>
@@ -259,57 +294,93 @@ const PlatformAdminPage: React.FC = () => {
           onClick={() => setSelectedOrder(null)}
         >
           <div
-            className="bg-jkd-black-800 border border-jkd-gray-400/20 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6"
+            className="bg-jkd-black-800 border border-jkd-gray-400/20 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-jkd-gold">訂單詳情</h2>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="text-jkd-gray-300 hover:text-jkd-white transition-colors"
-              >
-                關閉
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleRebuildPreview(selectedOrder)}
+                  disabled={!selectedOrder.generatedContent}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-jkd-gold text-jkd-black rounded-lg font-bold text-sm hover:bg-jkd-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={selectedOrder.generatedContent ? "復現客戶看到的 AI 生成預覽" : "無生成內容"}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  復現預覽
+                </button>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="px-4 py-2 border border-jkd-gray-400 text-jkd-gray-300 rounded-lg hover:bg-jkd-gray-400/10 transition-colors text-sm"
+                >
+                  關閉
+                </button>
+              </div>
             </div>
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-jkd-gray-300">訂單編號</span>
-                  <p className="font-mono text-jkd-gold">{selectedOrder.publicId}</p>
-                </div>
-                <div>
-                  <span className="text-jkd-gray-300">狀態</span>
-                  <p>{selectedOrder.status}</p>
-                </div>
-                <div>
-                  <span className="text-jkd-gray-300">姓名</span>
-                  <p>{selectedOrder.customerName || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-jkd-gray-300">電子郵件</span>
-                  <p>{selectedOrder.customerEmail || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-jkd-gray-300">電話</span>
-                  <p>{selectedOrder.customerPhone || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-jkd-gray-300">WhatsApp</span>
-                  <p>{selectedOrder.customerWhatsapp || "—"}</p>
+
+            <table className="w-full text-sm mb-6">
+              <tbody className="divide-y divide-jkd-gray-400/20">
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300 w-32">訂單編號</td>
+                  <td className="py-3 font-mono text-jkd-gold">{selectedOrder.publicId}</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">狀態</td>
+                  <td className="py-3">
+                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400">
+                      {selectedOrder.status}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">客戶姓名</td>
+                  <td className="py-3">{selectedOrder.customerName || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">電子郵件</td>
+                  <td className="py-3">{selectedOrder.customerEmail || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">電話</td>
+                  <td className="py-3">{selectedOrder.customerPhone || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">WhatsApp</td>
+                  <td className="py-3">{selectedOrder.customerWhatsapp || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">提交時間</td>
+                  <td className="py-3">{new Date(selectedOrder.createdAt).toLocaleString("zh-HK")}</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 text-jkd-gray-300">來源 IP</td>
+                  <td className="py-3 font-mono text-xs">{selectedOrder.sourceIp || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {selectedOrder.briefAnswers && Object.keys(selectedOrder.briefAnswers).length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-jkd-gold mb-3">客戶填寫資料</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-jkd-gray-400/20">
+                      {Object.entries(selectedOrder.briefAnswers)
+                        .filter(([key]) => key !== "_metadata")
+                        .map(([key, value]) => (
+                          <tr key={key}>
+                            <td className="py-2 pr-4 text-jkd-gray-300 w-32 align-top">{key}</td>
+                            <td className="py-2 whitespace-pre-wrap">{String(value)}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div>
-                <span className="text-jkd-gray-300">提交時間</span>
-                <p>{new Date(selectedOrder.createdAt).toLocaleString("zh-HK")}</p>
-              </div>
-              {selectedOrder.briefAnswers && (
-                <div>
-                  <span className="text-jkd-gray-300">客戶填寫資料</span>
-                  <pre className="mt-2 p-4 bg-jkd-black-700 rounded-lg overflow-x-auto text-xs text-jkd-gray-200">
-                    {JSON.stringify(selectedOrder.briefAnswers, null, 2)}
-                  </pre>
-                </div>
-              )}
+            )}
+
+            <div className="text-xs text-jkd-gray-300">
+              預覽狀態：{selectedOrder.generatedContent ? "已儲存生成內容，可復現預覽" : "未儲存生成內容，無法復現"}
             </div>
           </div>
         </div>

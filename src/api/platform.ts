@@ -47,6 +47,7 @@ export interface CreateOrderPayload {
   customer: CustomerPayload;
   answers: Record<string, string>;
   metadata?: Record<string, string>;
+  generatedContent?: Record<string, unknown>;
   honeypot?: string;
 }
 
@@ -157,6 +158,45 @@ export async function checkVerificationStatus(
   return request<VerificationStatus>(
     `/api/verify/status?code=${encodeURIComponent(code)}`
   );
+}
+
+export interface AdminOrderDetail {
+  id: number;
+  publicId: string;
+  status: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  customerWhatsapp?: string;
+  briefAnswers?: Record<string, unknown>;
+  generatedContent?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getAdminOrder(
+  token: string,
+  publicId: string
+): Promise<AdminOrderDetail> {
+  const res = await fetch(`${API_URL}/api/admin/orders/${encodeURIComponent(publicId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const body = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    data?: AdminOrderDetail;
+    error?: { message?: string };
+  };
+  if (!res.ok || body.success === false) {
+    throw new PlatformAPIError(
+      res.status,
+      body.error ? "ADMIN_ERROR" : "UNKNOWN_ERROR",
+      body.error?.message || `HTTP ${res.status}`
+    );
+  }
+  if (body.data === undefined) {
+    throw new PlatformAPIError(res.status, "INVALID_RESPONSE", "回應缺少資料");
+  }
+  return body.data;
 }
 
 export default {

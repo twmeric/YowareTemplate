@@ -49,6 +49,7 @@ const ORDER_SCHEMA = z.object({
   customer: CUSTOMER_SCHEMA,
   answers: z.record(z.unknown()),
   metadata: z.record(z.unknown()).optional(),
+  generatedContent: z.record(z.unknown()).optional(),
   honeypot: z.string().optional(),
 });
 
@@ -467,14 +468,15 @@ export default {
 
         const orderResult = await env.DB.prepare(
           `INSERT INTO orders
-            (public_id, customer_id, template_id, brief_answers, source_ip, user_agent, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            (public_id, customer_id, template_id, brief_answers, generated_content, source_ip, user_agent, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
           .bind(
             publicId,
             customerId,
             (template as Record<string, unknown>).id as number,
             briefAnswers,
+            data.generatedContent ? JSON.stringify(data.generatedContent) : null,
             clientIp,
             request.headers.get("User-Agent") ?? null,
             formatDate(now),
@@ -697,6 +699,54 @@ export default {
               createdAt: row.created_at,
               updatedAt: row.updated_at,
             })),
+          },
+          request
+        );
+      }
+
+      if (url.pathname.startsWith("/api/admin/orders/") && request.method === "GET") {
+        const auth = request.headers.get("Authorization") || "";
+        const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        const payload = await verifyJwt(token, env.ADMIN_TOKEN_SECRET);
+        if (!payload || payload.role !== "platform_admin") {
+          return errorResponse("UNAUTHORIZED", "Invalid or expired token", request, 401);
+        }
+
+        const publicId = url.pathname.slice("/api/admin/orders/".length);
+        const row = await env.DB.prepare(
+          `SELECT
+            o.id, o.public_id, o.status, o.brief_answers, o.generated_content, o.source_ip,
+            o.notification_sent_at, o.created_at, o.updated_at,
+            c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone, c.whatsapp AS customer_whatsapp
+           FROM orders o
+           JOIN customers c ON c.id = o.customer_id
+           WHERE o.public_id = ?`
+        )
+          .bind(publicId)
+          .first<Record<string, unknown>>();
+
+        if (!row) {
+          return errorResponse("NOT_FOUND", "Order not found", request, 404);
+        }
+
+        return jsonResponse(
+          {
+            success: true,
+            data: {
+              id: row.id,
+              publicId: row.public_id,
+              status: row.status,
+              customerName: row.customer_name,
+              customerEmail: row.customer_email,
+              customerPhone: row.customer_phone,
+              customerWhatsapp: row.customer_whatsapp,
+              briefAnswers: safeJsonParse(row.brief_answers as string),
+              generatedContent: safeJsonParse(row.generated_content as string),
+              sourceIp: row.source_ip,
+              notificationSentAt: row.notification_sent_at,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            },
           },
           request
         );
