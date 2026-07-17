@@ -1,0 +1,5 @@
+Error at 2026-07-17T00:24:52.846Z:
+InvalidCharacterError: btoa() can only operate on characters in the Latin1 (ISO/IEC 8859-1) range.
+InvalidCharacterError: btoa() can only operate on characters in the Latin1 (ISO/IEC 8859-1) range.
+    at commitGitHubFile (index.js:138:14)
+    at processWebhook (index.js:277:11)
