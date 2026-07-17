@@ -1,6 +1,5 @@
 # Custom Admin UI SPA fallback
-/manage              /index.html  200
-/manage/index.html   /index.html  200
+/manage              /manage/     302
 /manage/*            /index.html  200
 
 # React app catch-all
