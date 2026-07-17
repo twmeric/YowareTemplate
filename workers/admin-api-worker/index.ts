@@ -27,6 +27,7 @@ export interface Env {
   MEDIA_BUCKET_NAME: string;
   MEDIA_PUBLIC_URL: string;
   MEDIA_BUCKET: R2Bucket;
+  DB: D1Database;
 }
 
 interface JWTPayload {
@@ -38,7 +39,7 @@ interface JWTPayload {
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
@@ -51,6 +52,203 @@ function jsonResponse(data: unknown, status = 200): Response {
 
 function errorResponse(message: string, status = 400): Response {
   return jsonResponse({ success: false, error: message }, status);
+}
+
+function orderErrorResponse(code: string, message: string, status = 400): Response {
+  return jsonResponse({ success: false, error: { code, message } }, status);
+}
+
+const VALID_ORDER_STATUSES = ["pending", "reviewing", "accepted", "rejected", "completed", "cancelled"] as const;
+
+type OrderStatus = (typeof VALID_ORDER_STATUSES)[number];
+
+function safeParseJson<T>(value: unknown): T | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") return value as T;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+function mapOrderRow(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    publicId: row.public_id,
+    status: row.status,
+    customer: {
+      id: row.c_id,
+      name: row.c_name,
+      email: row.c_email,
+      phone: row.c_phone,
+      whatsapp: row.c_whatsapp,
+      preferredContact: row.c_preferred_contact,
+    },
+    template: row.t_id
+      ? {
+          id: row.t_id,
+          slug: row.t_slug,
+          name: row.t_name,
+        }
+      : null,
+    briefAnswers: safeParseJson<Record<string, unknown>>(row.brief_answers),
+    ownerNotes: row.owner_notes,
+    quotedAmount: row.quoted_amount,
+    currency: row.currency,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function handleListOrders(url: URL, env: Env): Promise<Response> {
+  const status = url.searchParams.get("status");
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 200);
+  const offset = parseInt(url.searchParams.get("offset") || "0", 10) || 0;
+
+  if (status && !(VALID_ORDER_STATUSES as readonly string[]).includes(status)) {
+    return orderErrorResponse("VALIDATION_ERROR", "Invalid status filter", 400);
+  }
+
+  let whereClause = "";
+  const params: (string | number)[] = [];
+  if (status) {
+    whereClause = "WHERE o.status = ?";
+    params.push(status);
+  }
+
+  const orderSql = `
+    SELECT o.id, o.public_id, o.status, o.brief_answers, o.owner_notes, o.quoted_amount, o.currency, o.created_at, o.updated_at,
+           c.id as c_id, c.email as c_email, c.name as c_name, c.phone as c_phone, c.whatsapp as c_whatsapp, c.preferred_contact as c_preferred_contact,
+           t.id as t_id, t.slug as t_slug, t.name as t_name
+    FROM orders o
+    JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN templates t ON o.template_id = t.id
+    ${whereClause}
+    ORDER BY o.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const { results } = await env.DB.prepare(orderSql).bind(...params, limit, offset).all();
+
+  const countSql = `SELECT COUNT(*) as total FROM orders o ${whereClause}`;
+  const countRow = await env.DB.prepare(countSql).bind(...params).first();
+  const total = (countRow?.total as number) || 0;
+
+  const orders = (results || []).map((row) => mapOrderRow(row as Record<string, unknown>));
+  return jsonResponse({ success: true, data: { orders, total } });
+}
+
+async function handleGetOrder(id: number, env: Env): Promise<Response> {
+  const row = await env.DB.prepare(`
+    SELECT o.id, o.public_id, o.status, o.brief_answers, o.owner_notes, o.quoted_amount, o.currency, o.created_at, o.updated_at,
+           c.id as c_id, c.email as c_email, c.name as c_name, c.phone as c_phone, c.whatsapp as c_whatsapp, c.preferred_contact as c_preferred_contact,
+           t.id as t_id, t.slug as t_slug, t.name as t_name
+    FROM orders o
+    JOIN customers c ON o.customer_id = c.id
+    LEFT JOIN templates t ON o.template_id = t.id
+    WHERE o.id = ?
+  `).bind(id).first();
+
+  if (!row) {
+    return orderErrorResponse("NOT_FOUND", "Order not found", 404);
+  }
+
+  const eventsResult = await env.DB.prepare(`
+    SELECT id, event, actor, payload, created_at
+    FROM order_events
+    WHERE order_id = ?
+    ORDER BY created_at DESC
+  `).bind(id).all();
+
+  const order = {
+    ...mapOrderRow(row as Record<string, unknown>),
+    events: (eventsResult.results || []).map((e) => ({
+      id: (e as Record<string, unknown>).id,
+      event: (e as Record<string, unknown>).event,
+      actor: (e as Record<string, unknown>).actor,
+      payload: safeParseJson((e as Record<string, unknown>).payload),
+      createdAt: (e as Record<string, unknown>).created_at,
+    })),
+  };
+
+  return jsonResponse({ success: true, data: { order } });
+}
+
+async function handlePatchOrder(request: Request, id: number, env: Env): Promise<Response> {
+  let body: { status?: string; ownerNotes?: string };
+  try {
+    body = (await request.json()) as { status?: string; ownerNotes?: string };
+  } catch {
+    return orderErrorResponse("VALIDATION_ERROR", "Invalid JSON body", 400);
+  }
+
+  const hasStatus = body.status !== undefined;
+  const hasNotes = body.ownerNotes !== undefined;
+
+  if (!hasStatus && !hasNotes) {
+    return orderErrorResponse("VALIDATION_ERROR", "At least one of status or ownerNotes is required", 400);
+  }
+
+  if (hasStatus && !(VALID_ORDER_STATUSES as readonly string[]).includes(body.status)) {
+    return orderErrorResponse("VALIDATION_ERROR", `Invalid status. Allowed: ${VALID_ORDER_STATUSES.join(", ")}`, 400);
+  }
+
+  const current = await env.DB.prepare(`SELECT status, owner_notes, public_id FROM orders WHERE id = ?`).bind(id).first();
+  if (!current) {
+    return orderErrorResponse("NOT_FOUND", "Order not found", 404);
+  }
+
+  const statements: D1PreparedStatement[] = [];
+  const now = new Date().toISOString();
+
+  if (hasStatus && body.status !== current.status) {
+    const payload = JSON.stringify({ from: current.status, to: body.status });
+    statements.push(
+      env.DB.prepare(`INSERT INTO order_events (order_id, event, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)`).bind(
+        id,
+        "status_changed",
+        "owner",
+        payload,
+        now
+      )
+    );
+  }
+
+  if (hasNotes && body.ownerNotes !== current.owner_notes) {
+    const payload = JSON.stringify({ notes: body.ownerNotes });
+    statements.push(
+      env.DB.prepare(`INSERT INTO order_events (order_id, event, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)`).bind(
+        id,
+        "note_added",
+        "owner",
+        payload,
+        now
+      )
+    );
+  }
+
+  statements.push(
+    env.DB.prepare(`UPDATE orders SET status = COALESCE(?, status), owner_notes = COALESCE(?, owner_notes), updated_at = ? WHERE id = ?`).bind(
+      hasStatus ? body.status : null,
+      hasNotes ? body.ownerNotes : null,
+      now,
+      id
+    )
+  );
+
+  await env.DB.batch(statements);
+
+  return jsonResponse({
+    success: true,
+    data: {
+      id,
+      publicId: current.public_id,
+      status: hasStatus ? body.status : current.status,
+      ownerNotes: hasNotes ? body.ownerNotes : current.owner_notes,
+      updatedAt: now,
+    },
+  });
 }
 
 async function signJWT(payload: Omit<JWTPayload, "iat">, secret: string): Promise<string> {
@@ -315,6 +513,22 @@ export default {
         if (!key) return errorResponse("Missing key");
         await env.MEDIA_BUCKET.delete(key);
         return jsonResponse({ success: true, message: "Deleted" });
+      }
+
+      // Order management endpoints
+      if (url.pathname === "/api/orders" && request.method === "GET") {
+        return handleListOrders(url, env);
+      }
+
+      const orderMatch = url.pathname.match(/^\/api\/orders\/(\d+)$/);
+      if (orderMatch) {
+        const id = parseInt(orderMatch[1], 10);
+        if (request.method === "GET") {
+          return handleGetOrder(id, env);
+        }
+        if (request.method === "PATCH") {
+          return handlePatchOrder(request, id, env);
+        }
       }
 
       return errorResponse("Not found", 404);

@@ -1,11 +1,50 @@
+/// <reference types="vite/client" />
 import type { SiteContent } from "../types/content";
 
-const ADMIN_API_URL = "https://jkd-admin-api-worker.jimsbond007.workers.dev";
+const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL || "https://jkd-admin-api-worker.jimsbond007.workers.dev";
 
 export class AdminAPIError extends Error {
   constructor(public status: number, message: string) {
     super(message);
   }
+}
+
+export interface Customer {
+  id: number;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  whatsapp: string | null;
+  preferredContact: string | null;
+}
+
+export interface TemplateRef {
+  id: number;
+  slug: string;
+  name: string;
+}
+
+export interface OrderEvent {
+  id: number;
+  event: string;
+  actor: string | null;
+  payload: unknown;
+  createdAt: string;
+}
+
+export interface Order {
+  id: number;
+  publicId: string;
+  status: string;
+  customer: Customer;
+  template: TemplateRef | null;
+  briefAnswers: Record<string, unknown>;
+  ownerNotes: string | null;
+  quotedAmount: number | null;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+  events?: OrderEvent[];
 }
 
 async function request(path: string, options: RequestInit = {}): Promise<unknown> {
@@ -19,9 +58,19 @@ async function request(path: string, options: RequestInit = {}): Promise<unknown
     },
   });
 
-  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string | { code: string; message: string };
+  };
   if (!res.ok) {
-    throw new AdminAPIError(res.status, data.error || `HTTP ${res.status}`);
+    let message: string;
+    if (typeof data.error === "string") {
+      message = data.error;
+    } else if (data.error && typeof data.error === "object" && "message" in data.error) {
+      message = data.error.message;
+    } else {
+      message = `HTTP ${res.status}`;
+    }
+    throw new AdminAPIError(res.status, message);
   }
   return data;
 }
@@ -53,4 +102,37 @@ export async function saveContent(content: SiteContent): Promise<void> {
     method: "POST",
     body: JSON.stringify({ content }),
   });
+}
+
+export async function getOrders(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ orders: Order[]; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set("status", params.status);
+  if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  if (params?.offset !== undefined) query.set("offset", String(params.offset));
+  const qs = query.toString();
+  const data = (await request(`/api/orders${qs ? `?${qs}` : ""}`)) as {
+    orders: Order[];
+    total: number;
+  };
+  return { orders: data.orders, total: data.total };
+}
+
+export async function getOrder(id: number): Promise<Order> {
+  const data = (await request(`/api/orders/${id}`)) as { order: Order };
+  return data.order;
+}
+
+export async function updateOrder(
+  id: number,
+  payload: { status?: string; ownerNotes?: string }
+): Promise<Order> {
+  const data = (await request(`/api/orders/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  })) as Order;
+  return data;
 }

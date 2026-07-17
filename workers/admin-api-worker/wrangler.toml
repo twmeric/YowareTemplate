@@ -2,6 +2,11 @@ name = "jkd-admin-api-worker"
 main = "index.ts"
 compatibility_date = "2024-01-01"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "yowaretemplate-platform-db"
+database_id = "931be9df-48fe-43ef-8270-dda773b8f573"
+
 [vars]
 GITHUB_REPO = "twmeric/YowareTemplate"
 MEDIA_BUCKET_NAME = "jkd-media-yowaretemplate"

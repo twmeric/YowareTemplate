@@ -3,6 +3,7 @@ import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2 } f
 import { login, logout, loadContent, saveContent, setToken, AdminAPIError } from "../api/admin";
 import ImageInput from "../components/admin/ImageInput";
 import MediaLibrary from "../components/admin/MediaLibrary";
+import OrdersTab from "../components/admin/OrdersTab";
 import type { SiteContent, Product, ServiceItem, NavItem, SocialLink } from "../types/content";
 
 const DEFAULT_CONTENT: SiteContent = {
@@ -153,6 +154,7 @@ const Admin: React.FC = () => {
     { id: "services", label: "服務" },
     { id: "products", label: "產品" },
     { id: "media", label: "媒體庫" },
+    { id: "orders", label: "訂單管理" },
     { id: "contact", label: "聯絡" },
     { id: "footer", label: "頁尾" },
   ];
@@ -243,6 +245,9 @@ const Admin: React.FC = () => {
           )}
           {activeSection === "media" && (
             <MediaSection />
+          )}
+          {activeSection === "orders" && (
+            <OrdersTab />
           )}
           {activeSection === "footer" && (
             <FooterSection footer={content.footer} onChange={(v) => updateField("footer", v)} />

@@ -32,3 +32,6 @@ Thumbs.db
 test_ai_output*.txt
 test_ai_output*.json
 source_code.zip
+
+# Agent workspace
+.ai/
