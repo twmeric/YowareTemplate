@@ -138,12 +138,46 @@ const PlatformAdminPage: React.FC = () => {
   };
 
   const handleRebuildPreview = (order: OrderDetail) => {
-    if (!order.generatedContent) {
-      setError("此訂單沒有儲存生成的預覽內容，無法復現");
+    if (order.generatedContent) {
+      localStorage.setItem("yoware_generated_content", JSON.stringify(order.generatedContent));
+    }
+    window.open(`/preview?mode=generated&publicId=${order.publicId}`, "_blank");
+  };
+
+  const handleRegeneratePreview = async (order: OrderDetail) => {
+    if (!order.briefAnswers) {
+      setError("此訂單沒有客戶填寫資料，無法重新生成");
       return;
     }
-    localStorage.setItem("yoware_generated_content", JSON.stringify(order.generatedContent));
-    window.open(`/preview?mode=generated&publicId=${order.publicId}`, "_blank");
+    setDetailLoading(true);
+    setError(null);
+    try {
+      const { generateContent } = await import("../../api/ai");
+      const a = order.briefAnswers;
+      const brief = [
+        `# 客戶需求簡報`,
+        ``,
+        `行業別：${a.industry || "未提供"}`,
+        `品牌名稱：${a.brandName || "未提供"}`,
+        `品牌調性：${a.brandTone || "未提供"}`,
+        `風格要求：${a.styleRequirements || "未提供"}`,
+        `語言：${a.language || "繁體中文"}`,
+        `核心賣點：`,
+        ...(a.sellingPoints ? String(a.sellingPoints).split("\n") : ["未提供"]),
+        `目標客群：${a.targetAudience || "未提供"}`,
+        `聯絡方式：${a.siteContactMethod || "未提供"}`,
+        `禁用詞：${a.forbiddenWords || "無"}`,
+        `其他補充：${a.additionalNotes || "無"}`,
+      ].join("\n");
+
+      const generated = await generateContent(brief);
+      localStorage.setItem("yoware_generated_content", JSON.stringify(generated.content));
+      window.open(`/preview?mode=generated&publicId=${order.publicId}`, "_blank");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "重新生成失敗");
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   if (!token) {
@@ -300,15 +334,26 @@ const PlatformAdminPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-jkd-gold">訂單詳情</h2>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleRebuildPreview(selectedOrder)}
-                  disabled={!selectedOrder.generatedContent}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-jkd-gold text-jkd-black rounded-lg font-bold text-sm hover:bg-jkd-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={selectedOrder.generatedContent ? "復現客戶看到的 AI 生成預覽" : "無生成內容"}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  復現預覽
-                </button>
+                {selectedOrder.generatedContent ? (
+                  <button
+                    onClick={() => handleRebuildPreview(selectedOrder)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-jkd-gold text-jkd-black rounded-lg font-bold text-sm hover:bg-jkd-gold-light transition-colors"
+                    title="復現客戶看到的 AI 生成預覽"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    復現預覽
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleRegeneratePreview(selectedOrder)}
+                    disabled={detailLoading}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-jkd-gold text-jkd-black rounded-lg font-bold text-sm hover:bg-jkd-gold-light transition-colors disabled:opacity-50"
+                    title="用原始資料重新讓 AI 生成預覽"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${detailLoading ? "animate-spin" : ""}`} />
+                    重新生成預覽
+                  </button>
+                )}
                 <button
                   onClick={() => setSelectedOrder(null)}
                   className="px-4 py-2 border border-jkd-gray-400 text-jkd-gray-300 rounded-lg hover:bg-jkd-gray-400/10 transition-colors text-sm"
@@ -380,7 +425,7 @@ const PlatformAdminPage: React.FC = () => {
             )}
 
             <div className="text-xs text-jkd-gray-300">
-              預覽狀態：{selectedOrder.generatedContent ? "已儲存生成內容，可復現預覽" : "未儲存生成內容，無法復現"}
+              預覽狀態：{selectedOrder.generatedContent ? "已儲存生成內容，可復現預覽" : "此為舊訂單，未儲存生成內容，可點「重新生成預覽」用 AI 重跑一次"}
             </div>
           </div>
         </div>

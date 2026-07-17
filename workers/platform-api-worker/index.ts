@@ -561,6 +561,35 @@ export default {
         );
       }
 
+      if (url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/preview") && request.method === "GET") {
+        const publicId = url.pathname.slice("/api/orders/".length, -"/preview".length);
+        const row = await env.DB.prepare(
+          "SELECT public_id, generated_content FROM orders WHERE public_id = ?"
+        )
+          .bind(publicId)
+          .first<{ public_id: string; generated_content: string }>();
+
+        if (!row) {
+          return errorResponse("NOT_FOUND", "Order not found", request, 404);
+        }
+
+        const generatedContent = safeJsonParse(row.generated_content);
+        if (!generatedContent) {
+          return errorResponse("NOT_FOUND", "Preview content not available", request, 404);
+        }
+
+        return jsonResponse(
+          {
+            success: true,
+            data: {
+              publicId: row.public_id,
+              generatedContent,
+            },
+          },
+          request
+        );
+      }
+
       // --------------------------------------------------
       // WhatsApp Verification Flow
       // --------------------------------------------------

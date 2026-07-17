@@ -75,20 +75,44 @@ const LandingPreview: React.FC<LandingPreviewProps> = ({ shared = false }) => {
   useEffect(() => {
     if (!isGenerated) return;
 
-    try {
-      const raw = localStorage.getItem("yoware_generated_content");
-      if (raw) {
-        const parsed = JSON.parse(raw) as SiteContent;
-        setGeneratedContent(parsed);
-      } else {
-        setGeneratedError("找不到 AI 生成的內容，請重新提交表單。");
+    const loadGeneratedContent = async () => {
+      try {
+        const raw = localStorage.getItem("yoware_generated_content");
+        if (raw) {
+          const parsed = JSON.parse(raw) as SiteContent;
+          setGeneratedContent(parsed);
+          setGeneratedLoading(false);
+          return;
+        }
+
+        // Fallback: fetch from API if publicId is provided
+        if (publicId) {
+          const apiUrl =
+            import.meta.env.VITE_PLATFORM_API_URL ||
+            "https://jkd-platform-api-worker.jimsbond007.workers.dev";
+          const res = await fetch(`${apiUrl}/api/orders/${encodeURIComponent(publicId)}/preview`);
+          const body = (await res.json().catch(() => ({}))) as {
+            success?: boolean;
+            data?: { generatedContent?: SiteContent };
+            error?: { message?: string };
+          };
+          if (res.ok && body.success !== false && body.data?.generatedContent) {
+            setGeneratedContent(body.data.generatedContent);
+          } else {
+            setGeneratedError(body.error?.message || "找不到 AI 生成的內容，請重新提交表單。");
+          }
+        } else {
+          setGeneratedError("找不到 AI 生成的內容，請重新提交表單。");
+        }
+      } catch (err) {
+        setGeneratedError("讀取生成內容時發生錯誤。");
+      } finally {
+        setGeneratedLoading(false);
       }
-    } catch (err) {
-      setGeneratedError("讀取生成內容時發生錯誤。");
-    } finally {
-      setGeneratedLoading(false);
-    }
-  }, [isGenerated]);
+    };
+
+    loadGeneratedContent();
+  }, [isGenerated, publicId]);
 
   const content = isGenerated && generatedContent ? generatedContent : fetched.content;
   const loading = isGenerated ? generatedLoading : fetched.loading;
