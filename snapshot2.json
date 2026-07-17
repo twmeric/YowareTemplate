@@ -1,0 +1,591 @@
+{
+  "ok": true,
+  "data": {
+    "url": "https://quickpage.jkdcoding.com/start/landing-v1",
+    "title": "JKDWebsite",
+    "tree": [
+      [
+        {
+          "role": "banner",
+          "children": [
+            {
+              "role": "link",
+              "name": "JKD JKDWebsite",
+              "ref": "@e1",
+              "children": [
+                {
+                  "role": "StaticText",
+                  "name": "JKD",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "JKD"
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": "JKDWebsite",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "JKDWebsite"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "navigation",
+              "children": [
+                {
+                  "role": "link",
+                  "name": "首頁",
+                  "ref": "@e2",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "首頁",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "首頁"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "link",
+                  "name": "模板",
+                  "ref": "@e3",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "模板",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "模板"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "link",
+                  "name": "預覽",
+                  "ref": "@e4",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "預覽",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "預覽"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "role": "main",
+          "children": [
+            [
+              {
+                "role": "heading",
+                "name": "開始製作：日出咖啡 Sunrise Brew",
+                "children": [
+                  {
+                    "role": "StaticText",
+                    "name": "開始製作：",
+                    "children": [
+                      {
+                        "role": "InlineTextBox",
+                        "name": "開始製作："
+                      }
+                    ]
+                  },
+                  {
+                    "role": "StaticText",
+                    "name": "日出咖啡 Sunrise Brew",
+                    "children": [
+                      {
+                        "role": "InlineTextBox",
+                        "name": "日出咖啡 Sunrise Brew"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "role": "paragraph",
+                "children": [
+                  {
+                    "role": "StaticText",
+                    "name": "填寫以下資料，我們將依此為您客製化網站。",
+                    "children": [
+                      {
+                        "role": "InlineTextBox",
+                        "name": "填寫以下資料，我們將依此為您客製化網站。"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "role": "StaticText",
+                "name": "WhatsApp 驗證",
+                "children": [
+                  {
+                    "role": "InlineTextBox",
+                    "name": "WhatsApp 驗證"
+                  }
+                ]
+              },
+              [
+                {
+                  "role": "StaticText",
+                  "name": "2",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "2"
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": "品牌資訊",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "品牌資訊"
+                    }
+                  ]
+                }
+              ],
+              [
+                {
+                  "role": "StaticText",
+                  "name": "3",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "3"
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": "業務內容",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "業務內容"
+                    }
+                  ]
+                }
+              ],
+              [
+                {
+                  "role": "StaticText",
+                  "name": "4",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "4"
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": "確認與送出",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "確認與送出"
+                    }
+                  ]
+                }
+              ]
+            ],
+            [
+              {
+                "role": "heading",
+                "name": "品牌資訊",
+                "children": [
+                  {
+                    "role": "StaticText",
+                    "name": "品牌資訊",
+                    "children": [
+                      {
+                        "role": "InlineTextBox",
+                        "name": "品牌資訊"
+                      }
+                    ]
+                  }
+                ]
+              },
+              [
+                [
+                  {
+                    "role": "LabelText",
+                    "children": [
+                      {
+                        "role": "StaticText",
+                        "name": "行業別",
+                        "children": [
+                          {
+                            "role": "InlineTextBox",
+                            "name": "行業別"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "role": "textbox",
+                    "name": "例如：餐飲、零售、服務",
+                    "ref": "@e5"
+                  }
+                ],
+                [
+                  {
+                    "role": "LabelText",
+                    "children": [
+                      {
+                        "role": "StaticText",
+                        "name": "品牌名稱",
+                        "children": [
+                          {
+                            "role": "InlineTextBox",
+                            "name": "品牌名稱"
+                          }
+                        ]
+                      },
+                      {
+                        "role": "StaticText",
+                        "name": "*",
+                        "children": [
+                          {
+                            "role": "InlineTextBox",
+                            "name": "*"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "role": "textbox",
+                    "name": "請輸入品牌名稱",
+                    "ref": "@e6"
+                  }
+                ],
+                [
+                  {
+                    "role": "LabelText",
+                    "children": [
+                      {
+                        "role": "StaticText",
+                        "name": "品牌語調 / 風格關鍵詞",
+                        "children": [
+                          {
+                            "role": "InlineTextBox",
+                            "name": "品牌語調 / 風格關鍵詞"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "role": "textbox",
+                    "name": "請輸入品牌語調 / 風格關鍵詞",
+                    "ref": "@e7"
+                  }
+                ],
+                [
+                  {
+                    "role": "LabelText",
+                    "children": [
+                      {
+                        "role": "StaticText",
+                        "name": "風格要求（例如：簡約、溫暖、高端、文青）",
+                        "children": [
+                          {
+                            "role": "InlineTextBox",
+                            "name": "風格要求（例如：簡約、溫暖、高端、文青）"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "role": "textbox",
+                    "name": "請輸入風格要求（例如：簡約、溫暖、高端、文青）",
+                    "ref": "@e8"
+                  }
+                ],
+                [
+                  {
+                    "role": "LabelText",
+                    "children": [
+                      {
+                        "role": "StaticText",
+                        "name": "網站語言",
+                        "children": [
+                          {
+                            "role": "InlineTextBox",
+                            "name": "網站語言"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "role": "combobox",
+                    "value": "請選擇",
+                    "ref": "@e9",
+                    "children": [
+                      {
+                        "role": "MenuListPopup",
+                        "children": [
+                          {
+                            "role": "option",
+                            "name": "請選擇",
+                            "ref": "@e10"
+                          },
+                          {
+                            "role": "option",
+                            "name": "繁體中文",
+                            "ref": "@e11"
+                          },
+                          {
+                            "role": "option",
+                            "name": "簡體中文",
+                            "ref": "@e12"
+                          },
+                          {
+                            "role": "option",
+                            "name": "英文",
+                            "ref": "@e13"
+                          },
+                          {
+                            "role": "option",
+                            "name": "中英雙語",
+                            "ref": "@e14"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ],
+              [
+                {
+                  "role": "button",
+                  "name": "上一步",
+                  "ref": "@e15",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "上一步",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "上一步"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "button",
+                  "name": "下一步",
+                  "ref": "@e16",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "下一步",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "下一步"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            ]
+          ]
+        },
+        {
+          "role": "contentinfo",
+          "children": [
+            [
+              {
+                "role": "StaticText",
+                "name": "JKD",
+                "children": [
+                  {
+                    "role": "InlineTextBox",
+                    "name": "JKD"
+                  }
+                ]
+              },
+              {
+                "role": "StaticText",
+                "name": "JKDWebsite",
+                "children": [
+                  {
+                    "role": "InlineTextBox",
+                    "name": "JKDWebsite"
+                  }
+                ]
+              }
+            ],
+            {
+              "role": "navigation",
+              "children": [
+                {
+                  "role": "link",
+                  "name": "首頁",
+                  "ref": "@e17",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "首頁",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "首頁"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "link",
+                  "name": "模板",
+                  "ref": "@e18",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "模板",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "模板"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "link",
+                  "name": "預覽",
+                  "ref": "@e19",
+                  "children": [
+                    {
+                      "role": "StaticText",
+                      "name": "預覽",
+                      "children": [
+                        {
+                          "role": "InlineTextBox",
+                          "name": "預覽"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "paragraph",
+              "children": [
+                {
+                  "role": "StaticText",
+                  "name": "© ",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "© "
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": "2026",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "2026"
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": " ",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": " "
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": "JKDWebsite",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": "JKDWebsite"
+                    }
+                  ]
+                },
+                {
+                  "role": "StaticText",
+                  "name": ". All rights reserved.",
+                  "children": [
+                    {
+                      "role": "InlineTextBox",
+                      "name": ". All rights reserved."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      [
+        [
+          {
+            "role": "image"
+          },
+          {
+            "role": "StaticText",
+            "name": "解釋",
+            "children": [
+              {
+                "role": "InlineTextBox",
+                "name": "解釋"
+              }
+            ]
+          }
+        ],
+        {
+          "role": "image"
+        }
+      ]
+    ]
+  }
+}

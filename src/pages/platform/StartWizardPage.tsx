@@ -79,6 +79,7 @@ const StartWizardPage: React.FC = () => {
   const [verifyStatus, setVerifyStatus] = useState<"idle" | "polling" | "verified" | "expired" | "error">("idle");
   const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [waUrl, setWaUrl] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -196,6 +197,12 @@ const StartWizardPage: React.FC = () => {
     setFieldErrors({});
   };
 
+  const buildWhatsAppUrl = (code: string): string => {
+    const message = encodeURIComponent(`【驗證】：${code}`);
+    const receiver = "85262322466";
+    return `https://wa.me/${receiver}?text=${message}`;
+  };
+
   const startVerification = async () => {
     setVerifyLoading(true);
     setVerifyError(null);
@@ -203,6 +210,9 @@ const StartWizardPage: React.FC = () => {
     try {
       const session = await requestVerificationCode();
       setVerifyCode(session.code);
+      const url = buildWhatsAppUrl(session.code);
+      setWaUrl(url);
+      window.open(url, "_blank");
       setVerifyStatus("polling");
     } catch (err) {
       setVerifyError(err instanceof Error ? err.message : "無法取得驗證碼");
@@ -213,9 +223,9 @@ const StartWizardPage: React.FC = () => {
   };
 
   const openWhatsApp = (code: string) => {
-    const message = encodeURIComponent(`【驗證】：${code}`);
-    const receiver = "85262322466";
-    window.open(`https://wa.me/${receiver}?text=${message}`, "_blank");
+    const url = buildWhatsAppUrl(code);
+    setWaUrl(url);
+    window.open(url, "_blank");
   };
 
   const [bypassInput, setBypassInput] = useState("");
@@ -396,9 +406,9 @@ const StartWizardPage: React.FC = () => {
         </div>
         <h3 className="text-xl font-bold text-jkd-white mb-2">用 WhatsApp 一鍵驗證</h3>
         <p className="text-jkd-gray-300 text-sm mb-6">
-          點擊下方按鈕開啟 WhatsApp，直接發送訊息即可驗證。
+          點擊下方按鈕後會直接開啟 WhatsApp。
           <br />
-          在電腦上會顯示 QR Code，請用手機 WhatsApp 掃描。
+          如果你在電腦上，請掃描 QR Code 用手機 WhatsApp 發送驗證訊息。
         </p>
 
         {verifyStatus === "idle" || verifyStatus === "error" ? (
@@ -434,11 +444,21 @@ const StartWizardPage: React.FC = () => {
           </div>
         ) : verifyStatus === "polling" && verifyCode ? (
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-jkd-black-800 border border-jkd-gold/30 rounded-xl">
-              <span className="text-jkd-gray-300">你的驗證碼：</span>
-              <span className="text-2xl font-mono font-bold text-jkd-gold tracking-widest">
-                {verifyCode}
-              </span>
+            <div className="flex flex-col items-center gap-3">
+              <div className="bg-white p-3 rounded-xl">
+                {waUrl ? (
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(waUrl)}`}
+                    alt="WhatsApp 驗證 QR Code"
+                    className="w-44 h-44"
+                  />
+                ) : (
+                  <div className="w-44 h-44 flex items-center justify-center text-jkd-black">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-jkd-gray-300">用手機 WhatsApp 掃描即可發送驗證訊息</p>
             </div>
             <div>
               <button
@@ -446,12 +466,12 @@ const StartWizardPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-full font-bold hover:bg-[#128C7E] transition-colors"
               >
                 <MessageCircle className="w-5 h-5" />
-                開啟 WhatsApp 發送驗證碼
+                直接開啟 WhatsApp
               </button>
             </div>
             <div className="flex items-center justify-center gap-2 text-jkd-gray-300 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
-              等待驗證中，請在 WhatsApp 發送驗證碼...
+              等待驗證中...
             </div>
             <p className="text-xs text-jkd-gray-300">
               沒有收到？
@@ -459,7 +479,7 @@ const StartWizardPage: React.FC = () => {
                 onClick={startVerification}
                 className="text-jkd-gold hover:underline ml-1 inline-flex items-center gap-1"
               >
-                <RefreshCw className="w-3 h-3" /> 重新取得驗證碼
+                <RefreshCw className="w-3 h-3" /> 重新發送
               </button>
             </p>
           </div>
