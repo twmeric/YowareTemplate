@@ -16,3 +16,4 @@
 # ´ú¸Õ¼Ð°O¡GAI Worker «D¦P¨B³B²z´ú¸Õ
 
 # log-capture-trigger
+# log-capture-trigger
