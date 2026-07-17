@@ -1,90 +1,86 @@
 # 03 - 新客戶上線 SOP
 
-> 每接一個新客戶，照這張清單走一遍。
+> Phase 1 已支援自動開站。本 SOP 以「客戶自助填單 + 後台一鍵開站」為主流程，並保留手動 fallback。
 
-## Step 1：複製模板
+## 主流程：自動開站
 
-- [ ] 在 GitHub 上從本模板點擊 **Use this template**
-- [ ] 命名：`client-<客戶代號>-<版型>`
-- [ ] 設定為 Private repo（建議）
+### Step 1：客戶填寫需求表單
 
-## Step 2：調整設定檔
+- [ ] 客戶訪問平台首頁 `/`
+- [ ] 瀏覽 `/templates` 選擇模板
+- [ ] 進入 `/templates/:slug` 預覽前台與後台
+- [ ] 點擊「開始製作」進入 `/start/:slug`
+- [ ] Step 1：完成 WhatsApp 身份驗證（或輸入 bypass code `360`）
+- [ ] Step 2：填寫品牌資料（依 `wizard_schema`）
+- [ ] Step 3：查看 AI 生成預覽，輸入：
+  - [ ] **期望域名**（例如 `www.mybrand.com`）
+  - [ ] **我想微調**（選填，自然語言描述）
+- [ ] 確認並提交訂單
 
-- [ ] `public/admin/config.yml`：修改 `repo`、`base_url`、`site_url`
-- [ ] `index.html`：修改 `<title>`（目前未動態載入）
+### Step 2：平台主理人審核
 
-## Step 3：填寫 brief.txt
+- [ ] 收到 WhatsApp 新訂單通知
+- [ ] 登入 `/platform-admin`
+- [ ] 查看訂單表格，點擊「查看」開啟詳情
+- [ ] 點擊「復現預覽」確認客戶看到的 AI 生成結果
+- [ ] 如需調整，點擊「重新生成預覽」或與客戶溝通
+- [ ] 確認報價與收款方式
 
-與客戶訪談後，依 `brief.txt` 範本填寫：
+### Step 3：確認付款並一鍵開站
 
-```text
-行業別：
-品牌名稱：
-品牌調性：
-核心賣點：
-目標客群：
-聯絡方式：
-禁用詞：
-語言：
-```
+- [ ] 收到客戶付款後，在訂單詳情點擊「標記已付款」
+- [ ] 訂單狀態變為 `paid` 後，「一鍵開站」按鈕啟用
+- [ ] 點擊「一鍵開站」
+- [ ] 系統自動執行：
+  - [ ] 從 `twmeric/YowareTemplate` 建立客戶 GitHub repo
+  - [ ] 寫入 `brief.txt` 與 `public/data/content.json`
+  - [ ] 建立 Cloudflare Pages 專案
+  - [ ] 綁定客戶自訂網域
+  - [ ] 發送交付通知給客戶
+- [ ] 在 `/platform-admin` 確認 `sites.status = live` 且訂單 `status = completed`
 
-## Step 4：Push 觸發 AI
-
-```bash
-git add .
-git commit -m "chore: initial client brief"
-git push
-```
-
-等待 AI Worker 生成 `public/data/content.json`。
-
-## Step 5：Cloudflare Pages 部署
-
-- [ ] Pages → Connect to Git → 選擇客戶 repo
-- [ ] Build command：`pnpm run build`
-- [ ] Build output directory：`dist`
-- [ ] 綁定客戶自訂網域（若需要）
-
-## Step 6：開通後台權限
-
-- [ ] 把客戶 GitHub 帳號加入 repo collaborator
-- [ ] 若使用 Zero Trust，把客戶信箱加入 `/admin` 白名單
-
-## Step 7：驗收測試
+### Step 4：驗收測試
 
 | 項目 | 標準 | 結果 |
 |---|---|---|
 | 網站可開 | 客戶網域正常顯示 | |
 | 內容正確 | 品牌名、產品、聯絡方式符合 brief | |
 | WhatsApp 按鈕 | 點擊後開啟正確對話 | |
-| /admin 後台 | 可用 GitHub 登入並修改內容 | |
+| `/manage` 後台 | 可用自動登入連結或密碼登入並修改內容 | |
 | 手機版 | 無跑版、按鈕可點 | |
 
-## Step 8：交付
+### Step 5：交付
 
-- [ ] 提供客戶 `/admin` 後台網址
+- [ ] 提供客戶網站網址
+- [ ] 提供 `/manage` 自動登入連結（7 天有效）
 - [ ] 提供簡易操作說明（如何改文字、如何改圖片）
-- [ ] 交付 Phase 4 驗收紀錄截圖
+- [ ] 將交付紀錄截圖存檔
+
+---
+
+## Fallback 流程：手動開站
+
+若自動開站失敗，請參考 `01-setup-guide.md` 的「步驟 6：手動開站 Fallback」完成剩餘步驟，並在 `/platform-admin` 手動將訂單標記為 `completed`。
+
+---
 
 ## 客戶操作須知（可複製給客戶）
 
 ### 修改網站內容
 
-1. 訪問 `https://<你的網域>/admin/`
-2. 點擊「Login with GitHub」
-3. 在「網站內容」中修改對應欄位
-4. 點擊右上角「Publish」儲存
+1. 訪問 `https://<你的網域>/manage/`
+2. 使用自動登入連結或輸入密碼
+3. 在後台編輯對應欄位
+4. 點擊「儲存」
 5. 等待約 1-2 分鐘，網站自動更新
 
-### 修改 brief（重新 AI 生成）
+### 提交修改需求
 
-1. 編輯 repo 根目錄的 `brief.txt`
-2. Commit 並 Push
-3. 約 10-60 秒後 AI 會自動更新 `public/data/content.json`
-4. Cloudflare Pages 自動重新部署
+- 小改（文字、圖片、顏色）：直接在 `/manage` 修改
+- 大改（結構、新增區塊、換模板）：聯繫平台主理人，重新提交需求表單
 
 ### 注意事項
 
 - 圖片建議使用 JPG 或 PNG，尺寸建議 1200x800 以上
 - 不要修改 `src/` 資料夾內的程式碼，除非有開發需求
-- 若 AI 生成結果不滿意，可直接在 `/admin` 手動調整
+- 若 AI 生成結果不滿意，可在 `/manage` 手動調整，或聯繫主理人重新生成

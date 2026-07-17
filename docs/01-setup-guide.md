@@ -4,11 +4,12 @@
 
 ## 前置需求
 
-- Cloudflare 帳號（需開通 Pages / Workers / Workers AI）
+- Cloudflare 帳號（需開通 Pages / Workers / D1 / R2）
 - GitHub 帳號
 - DeepSeek API Key
 - Pixabay API Key（可選，但強烈建議）
-- 一個 GitHub Personal Access Token（需 `repo` scope）
+- GitHub Personal Access Token（需 `repo` scope）
+- Cloudflare API Token（需 `Cloudflare Pages:Edit`、`Zone:Edit`、`Account:Read` 權限，用於自動開站）
 
 ---
 
@@ -21,6 +22,7 @@ wrangler secret put DEEPSEEK_API_KEY
 wrangler secret put GITHUB_TOKEN
 wrangler secret put PIXABAY_API_KEY        # 可選
 wrangler secret put GITHUB_WEBHOOK_SECRET  # 可選，但建議
+wrangler secret put AI_WORKER_SECRET       # 保護 /api/generate，僅內部 worker 可呼叫
 ```
 
 記下 Worker 網址：`https://jkd-ai-content-worker.你的子網域.workers.dev`
@@ -29,7 +31,7 @@ wrangler secret put GITHUB_WEBHOOK_SECRET  # 可選，但建議
 
 ## 步驟 2：部署 Admin API Worker（共用，只需一次）
 
-這個 Worker 提供自訂後台 UI 的 API，讓客戶不用 GitHub 就能編輯網站內容。
+這個 Worker 提供自訂後台 UI 的 API、訂單審核，以及**自動開站**功能。
 
 ```bash
 cd workers/admin-api-worker
@@ -37,27 +39,58 @@ pnpm exec wrangler deploy
 wrangler secret put ADMIN_PASSWORD         # 建議隨機 6 碼以上
 wrangler secret put ADMIN_TOKEN_SECRET     # 建議隨機 32 碼以上
 wrangler secret put GITHUB_TOKEN           # 與 AI Worker 相同，需 repo scope
+wrangler secret put CLOUDFLARE_API_TOKEN   # 用於自動建立 Pages project 與綁定 domain
 ```
 
-### 2.1 建立 R2 媒體庫 bucket
-
-每個客戶站建議獨立一個 R2 bucket：
-
-```bash
-wrangler r2 bucket create jkd-media-<客戶代號>
-wrangler r2 bucket dev-url enable jkd-media-<客戶代號>
-```
-
-啟用 dev-url 後會得到公開網址，例如 `https://pub-xxxxxxxx.r2.dev`。把這個網址填入 `wrangler.toml`：
+在 `wrangler.toml` 加入：
 
 ```toml
 [vars]
-GITHUB_REPO = "你的帳號/<客戶倉庫>"
-MEDIA_BUCKET_NAME = "jkd-media-<客戶代號>"
+CLOUDFLARE_ACCOUNT_ID = "你的 Cloudflare Account ID"
+```
+
+### 2.1 建立 D1 資料庫
+
+平台使用單一 D1 資料庫儲存模板、客戶、訂單與網站實例：
+
+```bash
+wrangler d1 create yowaretemplate-platform-db
+```
+
+記下 `database_id`，並在 `platform-api-worker` 與 `admin-api-worker` 的 `wrangler.toml` 都加入：
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "yowaretemplate-platform-db"
+database_id = "<database_id>"
+```
+
+套用 migration：
+
+```bash
+cd workers/platform-api-worker
+wrangler d1 migrations apply yowaretemplate-platform-db
+```
+
+### 2.2 建立 R2 媒體庫 bucket
+
+所有模板與客戶圖片可共用一個 R2 bucket（Phase 1），未來再依客戶拆分：
+
+```bash
+wrangler r2 bucket create jkd-media-yowaretemplate
+wrangler r2 bucket dev-url enable jkd-media-yowaretemplate
+```
+
+啟用 dev-url 後會得到公開網址，例如 `https://pub-xxxxxxxx.r2.dev`。把這個網址填入 `admin-api-worker/wrangler.toml`：
+
+```toml
+[vars]
+MEDIA_BUCKET_NAME = "jkd-media-yowaretemplate"
 MEDIA_PUBLIC_URL = "https://pub-xxxxxxxx.r2.dev"
 
 [[r2_buckets]]
-bucket_name = "jkd-media-<客戶代號>"
+bucket_name = "jkd-media-yowaretemplate"
 binding = "MEDIA_BUCKET"
 ```
 
@@ -65,12 +98,56 @@ binding = "MEDIA_BUCKET"
 
 記下 Worker 網址：`https://jkd-admin-api-worker.你的子網域.workers.dev`
 
-### 產生自動登入連結
+## 步驟 3：部署 Platform API Worker（共用，只需一次）
 
-登入後台有兩種方式：
+```bash
+cd workers/platform-api-worker
+pnpm exec wrangler deploy
+wrangler secret put EMAIL_API_KEY              # Resend / SendGrid / Mailgun
+wrangler secret put OWNER_EMAIL                # 新訂單通知收件人
+```
 
-1. **密碼登入**：直接訪問 `https://<客戶網域>/manage`，輸入 `ADMIN_PASSWORD`。
-2. **自動登入連結**：呼叫 Worker 產生一次性 token URL，適合寄給客戶：
+在 `wrangler.toml` 加入：
+
+```toml
+[vars]
+PLATFORM_ORIGIN = "https://yowaretemplate.pages.dev"
+EMAIL_FROM = "noreply@yowaretemplate.pages.dev"
+```
+
+記下 Worker 網址：`https://jkd-platform-api-worker.你的子網域.workers.dev`
+
+---
+
+## 步驟 4：部署平台前台（Cloudflare Pages）
+
+```bash
+pnpm install
+pnpm run build
+wrangler pages deploy dist
+```
+
+於 Cloudflare Pages 專案設定以下建置環境變數：
+
+- `VITE_PLATFORM_API_URL`
+- `VITE_ADMIN_API_URL`
+- `VITE_AI_API_URL`
+
+---
+
+## 步驟 5：建立第一個客戶站（推薦：一鍵開站）
+
+Phase 1 已支援自動開站。完整流程：
+
+1. 客戶訪問平台首頁，選擇模板，進入 `/start/:slug` 填寫表單。
+2. 精靈第三步由 AI 生成預覽，客戶輸入期望域名與微調需求後提交訂單。
+3. 平台主理人收到 WhatsApp 通知，進入 `/platform-admin`。
+4. 在後台查看訂單、復現預覽、標記 `payment_status = paid`，點擊「一鍵開站」。
+5. 系統自動：建立 GitHub repo → 寫入 brief/content → 建立 Pages project → 綁定 domain → 發送交付通知。
+
+### 自動登入連結
+
+開站完成後，系統會自動產生 `/manage` 自動登入連結並寄送給客戶。也可以手動產生：
 
 ```bash
 curl -X POST https://jkd-admin-api-worker.你的子網域.workers.dev/api/generate-token \
@@ -82,15 +159,17 @@ curl -X POST https://jkd-admin-api-worker.你的子網域.workers.dev/api/genera
 
 ---
 
-## 步驟 3：建立第一個客戶站
+## 步驟 6：手動開站 Fallback（當自動開站失敗時）
 
-### 3.1 從模板複製倉庫
+若一鍵開站某個環節失敗，可手動完成剩餘步驟：
 
-1. 在 GitHub 上開啟此模板倉庫
+### 6.1 從模板複製倉庫
+
+1. 在 GitHub 上開啟 `twmeric/YowareTemplate`
 2. 點擊 **Use this template**
-3. 命名規則：`client-<客戶代號>-<版型>`，例如 `client-bakery-v1`
+3. 命名規則：`yoware-<訂單編號小寫>`，例如 `yoware-ywt-20250717-a3k9`
 
-### 3.2 修改設定檔
+### 6.2 修改設定檔
 
 編輯 `src/api/admin.ts`，將 `ADMIN_API_URL` 改為你的 Admin API Worker 網址：
 
@@ -98,11 +177,12 @@ curl -X POST https://jkd-admin-api-worker.你的子網域.workers.dev/api/genera
 const ADMIN_API_URL = "https://jkd-admin-api-worker.你的子網域.workers.dev";
 ```
 
-### 3.3 填寫 brief.txt
+### 6.3 填寫 brief.txt 與 content.json
 
-參考倉庫根目錄的 `brief.txt` 範本，填入客戶資訊。
+- 參考倉庫根目錄的 `brief.txt` 範本，填入客戶資訊。
+- 將訂單的 `generated_content` 寫入 `public/data/content.json`。
 
-### 3.4 設定 GitHub Webhook
+### 6.4 設定 GitHub Webhook（可選）
 
 1. 客戶倉庫 → Settings → Webhooks → Add webhook
 2. Payload URL：`https://jkd-ai-content-worker.你的子網域.workers.dev`
@@ -111,16 +191,16 @@ const ADMIN_API_URL = "https://jkd-admin-api-worker.你的子網域.workers.dev"
 5. 觸發事件：選 **Just the push event**
 6. 啟用 Active
 
-### 3.5 部署到 Cloudflare Pages
+### 6.5 部署到 Cloudflare Pages
 
 1. Cloudflare Pages → Create a project → Connect to Git
 2. 選擇客戶倉庫
 3. Build settings：
    - Build command：`pnpm run build`
    - Build output directory：`dist`
-4. 完成首次部署
+4. 綁定客戶自訂網域
 
-### 3.6 觸發 AI 生成
+### 6.6 觸發 AI 生成（可選）
 
 ```bash
 git add brief.txt
@@ -132,11 +212,12 @@ git push
 
 ---
 
-## 步驟 4：驗證
+## 步驟 7：驗證
 
 - 訪問客戶網站，確認內容正確渲染
-- 訪問 `https://<客戶網域>/manage`，使用 `ADMIN_PASSWORD` 登入，測試修改內容並儲存
-- 檢查 AI Worker 執行記錄（Wrangler Logs / Cloudflare Dashboard）
+- 訪問 `https://<客戶網域>/manage`，使用自動登入連結或 `ADMIN_PASSWORD` 登入，測試修改內容並儲存
+- 檢查 AI Worker 與 Admin API Worker 執行記錄（Wrangler Logs / Cloudflare Dashboard）
+- 在 `/platform-admin` 確認訂單狀態為 `completed`，`sites` 記錄 status 為 `live`
 
 ---
 
