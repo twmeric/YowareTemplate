@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Save, LogOut, Loader2, AlertCircle, CheckCircle, Menu, Plus, Trash2 } from "lucide-react";
 import { login, logout, loadContent, saveContent, setToken, AdminAPIError } from "../api/admin";
+import ImageInput from "../components/admin/ImageInput";
+import MediaLibrary from "../components/admin/MediaLibrary";
 import type { SiteContent, Product, ServiceItem, NavItem, SocialLink } from "../types/content";
 
 const DEFAULT_CONTENT: SiteContent = {
@@ -150,6 +152,7 @@ const Admin: React.FC = () => {
     { id: "story", label: "品牌故事" },
     { id: "services", label: "服務" },
     { id: "products", label: "產品" },
+    { id: "media", label: "媒體庫" },
     { id: "contact", label: "聯絡" },
     { id: "footer", label: "頁尾" },
   ];
@@ -238,6 +241,9 @@ const Admin: React.FC = () => {
           {activeSection === "contact" && (
             <ContactSection contact={content.contact} onChange={(v) => updateField("contact", v)} />
           )}
+          {activeSection === "media" && (
+            <MediaSection />
+          )}
           {activeSection === "footer" && (
             <FooterSection footer={content.footer} onChange={(v) => updateField("footer", v)} />
           )}
@@ -272,9 +278,8 @@ const BrandSection: React.FC<{ brand: SiteContent["brand"]; onChange: (v: SiteCo
       <input className={inputClass()} value={brand.logo} onChange={(e) => onChange({ ...brand, logo: e.target.value })} />
     </div>
     <div>
-      <label className={labelClass()}>Logo 圖片 URL（選填，會覆蓋字母）</label>
-      <input className={inputClass()} value={brand.logoImage || ""} onChange={(e) => onChange({ ...brand, logoImage: e.target.value })} />
-      {brand.logoImage && <img src={brand.logoImage} alt="Logo preview" className="mt-2 h-16 w-auto object-contain border border-gray-200 rounded-lg p-2" />}
+      <label className={labelClass()}>Logo 圖片（選填，會覆蓋字母）</label>
+      <ImageInput value={brand.logoImage || ""} onChange={(url) => onChange({ ...brand, logoImage: url })} />
     </div>
     <div>
       <label className={labelClass()}>英文標語</label>
@@ -345,8 +350,8 @@ const HeroSection: React.FC<{ hero: SiteContent["hero"]; onChange: (v: SiteConte
       <textarea className={`${inputClass()} h-24`} value={hero.description} onChange={(e) => onChange({ ...hero, description: e.target.value })} />
     </div>
     <div>
-      <label className={labelClass()}>主圖 URL</label>
-      <input className={inputClass()} value={hero.image} onChange={(e) => onChange({ ...hero, image: e.target.value })} />
+      <label className={labelClass()}>主圖</label>
+      <ImageInput value={hero.image} onChange={(url) => onChange({ ...hero, image: url })} />
     </div>
     <div className="grid grid-cols-2 gap-4">
       <div>
@@ -400,8 +405,8 @@ const StorySection: React.FC<{ story: SiteContent["story"]; onChange: (v: SiteCo
       ))}
     </div>
     <div>
-      <label className={labelClass()}>圖片 URL</label>
-      <input className={inputClass()} value={story.image} onChange={(e) => onChange({ ...story, image: e.target.value })} />
+      <label className={labelClass()}>圖片</label>
+      <ImageInput value={story.image} onChange={(url) => onChange({ ...story, image: url })} />
     </div>
     <div>
       <label className={labelClass()}>引言</label>
@@ -515,9 +520,9 @@ const ProductsSection: React.FC<{ products: SiteContent["products"]; onChange: (
               onChange({ ...products, items });
             }} />
           </div>
-          <input className={inputClass()} placeholder="圖片 URL" value={item.image} onChange={(e) => {
+          <ImageInput placeholder="圖片 URL" value={item.image} onChange={(url) => {
             const items = [...products.items];
-            items[idx] = { ...item, image: e.target.value };
+            items[idx] = { ...item, image: url };
             onChange({ ...products, items });
           }} />
         </div>
@@ -555,6 +560,23 @@ const ContactSection: React.FC<{ contact: SiteContent["contact"]; onChange: (v: 
     </div>
   </div>
 );
+
+const MediaSection: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-brand-green mb-4">媒體庫</h2>
+      <p className="text-gray-600 mb-4">在這裡統一管理上傳到 R2 的圖片。其他欄位的「媒體庫」按鈕也會開啟這個圖庫。</p>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="px-4 py-2 bg-brand-green text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
+      >
+        開啟媒體庫
+      </button>
+      <MediaLibrary isOpen={isOpen} onClose={() => setIsOpen(false)} onSelect={() => {}} />
+    </div>
+  );
+};
 
 const FooterSection: React.FC<{ footer: SiteContent["footer"]; onChange: (v: SiteContent["footer"]) => void }> = ({ footer, onChange }) => (
   <div className="space-y-4">

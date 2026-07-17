@@ -8,6 +8,9 @@
  *   POST /api/generate-token     - generate auto-login token (requires master password)
  *   GET  /api/content            - read public/data/content.json
  *   POST /api/content            - write public/data/content.json
+ *   GET  /api/media              - list uploaded media
+ *   POST /api/media              - upload media to R2
+ *   DELETE /api/media/:key       - delete media from R2
  *
  * Environment variables (encrypted):
  *   ADMIN_PASSWORD      - Master password for admin access
@@ -21,6 +24,9 @@ export interface Env {
   ADMIN_TOKEN_SECRET: string;
   GITHUB_TOKEN: string;
   GITHUB_REPO: string;
+  MEDIA_BUCKET_NAME: string;
+  MEDIA_PUBLIC_URL: string;
+  MEDIA_BUCKET: R2Bucket;
 }
 
 interface JWTPayload {
@@ -260,6 +266,55 @@ export default {
           existingSha
         );
         return jsonResponse({ success: true, message: "Content saved" });
+      }
+
+      // Media library endpoints
+      if (url.pathname === "/api/media" && request.method === "GET") {
+        const listed = await env.MEDIA_BUCKET.list({ limit: 1000 });
+        const objects = (listed.objects || []).map((obj) => ({
+          key: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded,
+          url: `${env.MEDIA_PUBLIC_URL}/${obj.key}`,
+        }));
+        return jsonResponse({ success: true, objects });
+      }
+
+      if (url.pathname === "/api/media" && request.method === "POST") {
+        const formData = await request.formData();
+        const file = formData.get("file");
+        if (!file || !(file instanceof File)) {
+          return errorResponse("Missing file");
+        }
+
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!allowedTypes.includes(file.type)) {
+          return errorResponse("Invalid file type. Only images are allowed.");
+        }
+
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+          return errorResponse("File too large. Max 10MB.");
+        }
+
+        const ext = file.type.split("/").pop() || "jpg";
+        const key = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+        await env.MEDIA_BUCKET.put(key, file.stream(), {
+          httpMetadata: { contentType: file.type },
+        });
+
+        return jsonResponse({
+          success: true,
+          key,
+          url: `${env.MEDIA_PUBLIC_URL}/${key}`,
+        });
+      }
+
+      if (url.pathname.startsWith("/api/media/") && request.method === "DELETE") {
+        const key = url.pathname.slice("/api/media/".length);
+        if (!key) return errorResponse("Missing key");
+        await env.MEDIA_BUCKET.delete(key);
+        return jsonResponse({ success: true, message: "Deleted" });
       }
 
       return errorResponse("Not found", 404);

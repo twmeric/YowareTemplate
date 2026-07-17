@@ -47,10 +47,24 @@ React 應用在執行期載入此 JSON，再動態渲染頁面。
 
 1. 部署 `workers/admin-api-worker`
 2. 設定 secrets：`ADMIN_PASSWORD`、`ADMIN_TOKEN_SECRET`、`GITHUB_TOKEN`
-3. 編輯 `src/api/admin.ts` 中的 `ADMIN_API_URL` 為你的 Worker 網址
-4. 重新部署網站
+3. 建立 R2 bucket 並啟用 public dev-url，填入 `workers/admin-api-worker/wrangler.toml`
+4. 編輯 `src/api/admin.ts` 中的 `ADMIN_API_URL` 為你的 Worker 網址
+5. 重新部署網站
 
 也可以呼叫 `/api/generate-token` 產生自動登入連結給客戶。
+
+### 媒體庫與圖片壓縮
+
+後台內建媒體庫，圖片上傳前會自動壓縮：
+
+- ≤ 500 KB：不壓縮
+- 500 KB ~ 2 MB：縮至 2048px，品質 0.85
+- 2 MB ~ 5 MB：縮至 1920px，品質 0.75
+- > 5 MB：縮至 1600px，品質 0.65
+- SVG / GIF 不壓縮
+- 壓縮後若沒變小，自動回退原檔
+
+圖片儲存在 Cloudflare R2，透過公開 URL 在網站顯示。
 
 ## AI 自動生成
 

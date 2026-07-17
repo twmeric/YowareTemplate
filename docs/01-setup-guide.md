@@ -34,12 +34,34 @@ wrangler secret put GITHUB_WEBHOOK_SECRET  # 可選，但建議
 ```bash
 cd workers/admin-api-worker
 pnpm exec wrangler deploy
-wrangler secret put ADMIN_PASSWORD         # 建議隨機 16 碼以上
+wrangler secret put ADMIN_PASSWORD         # 建議隨機 6 碼以上
 wrangler secret put ADMIN_TOKEN_SECRET     # 建議隨機 32 碼以上
 wrangler secret put GITHUB_TOKEN           # 與 AI Worker 相同，需 repo scope
 ```
 
-Worker 會自動從 `wrangler.toml` 讀取 `GITHUB_REPO`。
+### 2.1 建立 R2 媒體庫 bucket
+
+每個客戶站建議獨立一個 R2 bucket：
+
+```bash
+wrangler r2 bucket create jkd-media-<客戶代號>
+wrangler r2 bucket dev-url enable jkd-media-<客戶代號>
+```
+
+啟用 dev-url 後會得到公開網址，例如 `https://pub-xxxxxxxx.r2.dev`。把這個網址填入 `wrangler.toml`：
+
+```toml
+[vars]
+GITHUB_REPO = "你的帳號/<客戶倉庫>"
+MEDIA_BUCKET_NAME = "jkd-media-<客戶代號>"
+MEDIA_PUBLIC_URL = "https://pub-xxxxxxxx.r2.dev"
+
+[[r2_buckets]]
+bucket_name = "jkd-media-<客戶代號>"
+binding = "MEDIA_BUCKET"
+```
+
+修改後重新 deploy Admin API Worker。
 
 記下 Worker 網址：`https://jkd-admin-api-worker.你的子網域.workers.dev`
 
