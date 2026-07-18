@@ -28,6 +28,8 @@ export interface Env {
 const ALLOWED_ORIGINS: Array<string | RegExp> = [
   "https://yowaretemplate.pages.dev",
   /^https:\/\/[a-zA-Z0-9_-]+\.yowaretemplate\.pages\.dev$/,
+  "https://quickpage.jkdcoding.com",
+  /^https:\/\/[a-zA-Z0-9_-]+\.quickpage\.jkdcoding\.com$/,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://[::1]:5173",

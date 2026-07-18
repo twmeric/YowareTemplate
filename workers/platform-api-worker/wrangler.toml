@@ -9,7 +9,7 @@ database_id = "931be9df-48fe-43ef-8270-dda773b8f573"
 migrations_dir = "migrations"
 
 [vars]
-PLATFORM_ORIGIN = "https://yowaretemplate.pages.dev"
+PLATFORM_ORIGIN = "https://quickpage.jkdcoding.com"
 RATE_LIMIT_PER_HOUR = "5"
 
 # Secrets to set via `wrangler secret put` after deploy:

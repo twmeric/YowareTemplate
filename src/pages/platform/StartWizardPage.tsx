@@ -338,7 +338,32 @@ const StartWizardPage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep() || !slug || !template) return;
+    // eslint-disable-next-line no-console
+    console.log("[StartWizard] handleSubmit invoked", {
+      step,
+      totalSteps,
+      slug,
+      hasTemplate: !!template,
+      verifyStatus,
+      name: data.name,
+      email: data.email,
+    });
+
+    if (!slug || !template) {
+      const msg = "頁面資料尚未載入完成，請重新整理後再試";
+      setSubmitError(msg);
+      window.alert(msg);
+      return;
+    }
+
+    if (!validateStep()) {
+      const msg = "請檢查並補充必填欄位";
+      setSubmitError(msg);
+      window.alert(msg);
+      // eslint-disable-next-line no-console
+      console.log("[StartWizard] validation failed", fieldErrors);
+      return;
+    }
 
     setSubmitting(true);
     setSubmitError(null);
@@ -347,11 +372,15 @@ const StartWizardPage: React.FC = () => {
     try {
       // 1. Generate content with AI (with timeout)
       const brief = buildBrief();
+      // eslint-disable-next-line no-console
+      console.log("[StartWizard] calling generateContent");
       const generated = await withTimeout(
         generateContent(brief),
-        45000,
+        60000,
         "AI 生成"
       );
+      // eslint-disable-next-line no-console
+      console.log("[StartWizard] generateContent success");
 
       setSubmitStatus("正在建立訂單...");
 
@@ -375,9 +404,11 @@ const StartWizardPage: React.FC = () => {
           answers: data.answers,
           generatedContent: generated.content as Record<string, unknown>,
         }),
-        15000,
+        20000,
         "建立訂單"
       );
+      // eslint-disable-next-line no-console
+      console.log("[StartWizard] createOrder success", result.publicId);
 
       // 4. Clear wizard draft
       if (slug) {
@@ -389,9 +420,11 @@ const StartWizardPage: React.FC = () => {
         replace: true,
       });
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "提交失敗，請稍後再試"
-      );
+      const message = err instanceof Error ? err.message : "提交失敗，請稍後再試";
+      // eslint-disable-next-line no-console
+      console.error("[StartWizard] submit error:", err);
+      setSubmitError(message);
+      window.alert(`提交失敗：${message}\n\n請檢查網路連線後再次點擊「確認送出」。若持續失敗，請透過 WhatsApp 聯絡我們。`);
     } finally {
       setSubmitting(false);
       setSubmitStatus(null);
@@ -789,7 +822,19 @@ const StartWizardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-jkd-black-800 text-jkd-white rounded-2xl shadow-sm border border-jkd-gray-400/20 p-6 md:p-10">
+              <form
+                className="bg-jkd-black-800 text-jkd-white rounded-2xl shadow-sm border border-jkd-gray-400/20 p-6 md:p-10"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  // eslint-disable-next-line no-console
+                  console.log("[StartWizard] form onSubmit fired", { step, totalSteps });
+                  if (step < totalSteps) {
+                    handleNext();
+                  } else {
+                    handleSubmit();
+                  }
+                }}
+              >
                 <h2 className="text-xl font-bold text-jkd-gold mb-6">
                   {stepTitles[step - 1]}
                 </h2>
@@ -822,6 +867,7 @@ const StartWizardPage: React.FC = () => {
                 <div className="mt-10 flex flex-col-reverse sm:flex-row gap-4 justify-between">
                   {step > 1 ? (
                     <button
+                      type="button"
                       onClick={handleBack}
                       disabled={submitting}
                       className="px-6 py-3 border border-jkd-gray-400 text-jkd-gray-200 rounded-lg font-medium hover:bg-jkd-gray-400/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
@@ -834,16 +880,27 @@ const StartWizardPage: React.FC = () => {
 
                   {step < totalSteps ? (
                     <button
-                      onClick={handleNext}
+                      type="submit"
+                      onClick={() => {
+                        // eslint-disable-next-line no-console
+                        console.log("[StartWizard] next button clicked");
+                        handleNext();
+                      }}
                       className="px-6 py-3 bg-jkd-gold text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2"
                     >
                       下一步 <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
                     <button
-                      onClick={handleSubmit}
+                      type="submit"
+                      onClick={() => {
+                        // eslint-disable-next-line no-console
+                        console.log("[StartWizard] submit button clicked");
+                      }}
                       disabled={submitting}
-                      className="px-6 py-3 bg-jkd-gold text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                      className={`px-6 py-3 bg-jkd-gold text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                        submitting ? "animate-pulse" : ""
+                      }`}
                     >
                       {submitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -854,7 +911,7 @@ const StartWizardPage: React.FC = () => {
                     </button>
                   )}
                 </div>
-              </div>
+              </form>
             </>
           )}
         </div>

@@ -81,6 +81,8 @@ import { SYSTEM_PROMPT } from "./prompt";
 const ALLOWED_ORIGINS: Array<string | RegExp> = [
   "https://yowaretemplate.pages.dev",
   /^https:\/\/[a-zA-Z0-9_-]+\.yowaretemplate\.pages\.dev$/,
+  "https://quickpage.jkdcoding.com",
+  /^https:\/\/[a-zA-Z0-9_-]+\.quickpage\.jkdcoding\.com$/,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://[::1]:5173",
@@ -231,7 +233,7 @@ async function commitGitHubFile(
   }
 }
 
-async function callDeepSeek(apiKey: string, brief: string): Promise<string> {
+async function callDeepSeekOnce(apiKey: string, brief: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
@@ -247,6 +249,7 @@ async function callDeepSeek(apiKey: string, brief: string): Promise<string> {
       temperature: 0.7,
       max_tokens: 4000,
     }),
+    signal,
   });
 
   if (!res.ok) {
@@ -260,6 +263,32 @@ async function callDeepSeek(apiKey: string, brief: string): Promise<string> {
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("DeepSeek returned empty content");
   return content;
+}
+
+async function callDeepSeek(apiKey: string, brief: string): Promise<string> {
+  const timeoutMs = 30000;
+  let lastError: Error | undefined;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const content = await callDeepSeekOnce(apiKey, brief, controller.signal);
+      clearTimeout(timer);
+      return content;
+    } catch (err) {
+      clearTimeout(timer);
+      lastError = err instanceof Error ? err : new Error(String(err));
+      // eslint-disable-next-line no-console
+      console.error(`DeepSeek attempt ${attempt} failed:`, lastError.message);
+      if (attempt === 1) {
+        // brief pause before retry
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  throw lastError || new Error("DeepSeek API failed after retries");
 }
 
 async function searchPixabay(query: string, apiKey?: string): Promise<string | null> {
