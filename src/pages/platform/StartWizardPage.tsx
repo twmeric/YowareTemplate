@@ -880,7 +880,7 @@ const StartWizardPage: React.FC = () => {
 
                   {step < totalSteps ? (
                     <button
-                      type="submit"
+                      type="button"
                       onClick={() => {
                         // eslint-disable-next-line no-console
                         console.log("[StartWizard] next button clicked");
